@@ -1,0 +1,7 @@
+# 统一换行，避免 Windows / macOS 互相踩
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.woff2 binary
+*.gia binary

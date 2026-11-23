@@ -1,0 +1,19 @@
+# 本地把官方素材换进 web/assets/ 后，避免误提交：
+#   git update-index --skip-worktree web/assets/*.png
+# 提交前恢复：
+#   git update-index --no-skip-worktree web/assets/*.png
+
+# 本地笔记 / 草稿
+/notes/
+*.local.*
+
+# 编辑器 / 系统
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+.vscode/
+.idea/
+
+# 依赖 / 构建产物（本仓库不需要，留着防手滑）
+node_modules/

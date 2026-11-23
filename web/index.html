@@ -1,0 +1,2857 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>地鼠节拍 · 打地鼠主场景</title>
+<style>
+/* =========================================================
+   打地鼠 · 横版扁平场景
+   风格：低饱和浅蓝灰 + 大色块 + 无描边 + 空气透视
+   布局：远景建筑 / 中景栏杆 / 近景地面 + 三排洞穴（近大远小）
+   素材：千星元件库 Prefab（史莱姆、金币、宝箱、商店/转盘图标）
+   基准分辨率 1280×720，等比缩放
+   ========================================================= */
+
+*,*::before,*::after{ box-sizing:border-box; }
+
+@font-face{
+  font-family:"Archivo Black";
+  src:url("assets/fonts/archivo-black-latin.woff2") format("woff2");
+  font-weight:400; font-style:normal; font-display:swap;
+}
+@font-face{
+  font-family:"Outfit";
+  src:url("assets/fonts/outfit-latin.woff2") format("woff2");
+  font-weight:100 900; font-style:normal; font-display:swap;
+}
+
+/* 光景风格：浅天蓝底 + 深靛蓝墨 + 亮黄高亮 + 纸白卡片 + 硬阴影 */
+:root{
+  --sky:#bdefff;
+  --sky-2:#a4e4fb;
+  --wall:#cdf2ff;
+  --arch:#a9dcf3;
+  --pillar:#070a7d;
+  --pillar-2:#040650;
+  --rail:#dcf5ff;
+  --floor:#eefbff;
+  --floor-2:#d4f2ff;
+  --hole:#0a127a;
+  --hole-in:#040650;
+  --paper:#f7fcff;
+  --cream:#f7fcff;
+  --cream-2:#e7f8ff;
+  --yellow:#fff100;
+  --yellow-2:#e6d900;
+  --orange:#ff7031;
+  --ink:#070a7d;
+  --red:#e03a2f;
+  --line:rgba(7,10,125,.16);
+  --line-2:rgba(7,10,125,.3);
+  --shadow-hard:5px 5px 0 rgba(7,10,125,.16);
+  --shadow-card:10px 12px 0 rgba(7,10,125,.18);
+  --font-display:"Archivo Black","Arial Black",Impact,sans-serif;
+  --font-en:"Outfit","Helvetica Neue",Arial,sans-serif;
+}
+
+html,body{
+  height:100%; margin:0;
+  background:#bdefff;
+  overflow:hidden;
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;
+  user-select:none; -webkit-user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+
+.viewport{
+  position:fixed; inset:0;
+  display:grid; place-items:center;
+  background:radial-gradient(circle at 50% 40%, #d9f4ff 0%, #a8e4fb 70%);
+  overflow:hidden;
+}
+
+.screen{
+  position:absolute; left:50%; top:50%;
+  width:1280px; height:720px;
+  transform:translate(-50%,-50%);
+  transform-origin:center center;
+  overflow:hidden;
+  color:var(--ink);
+  background:var(--sky);
+}
+
+/* =========================================================
+   场景：远景建筑
+   ========================================================= */
+.world{ position:absolute; inset:0; }
+
+/* 循环滚动的背景（两层视差）：一层内容 1280 宽，复制一份横向排开，
+   整体往左平移整整一屏后无缝接回开头 */
+.bg-loop{
+  position:absolute; inset:0;
+  overflow:hidden;
+  pointer-events:none;
+}
+.bg-track{
+  position:absolute; left:0; top:0;
+  width:2560px; height:720px;
+  display:flex;
+  will-change:transform;
+  backface-visibility:hidden;
+}
+.bg-plane{
+  position:relative;
+  flex:0 0 1280px; width:1280px; height:720px;
+}
+/* 远景慢一点，近景快一点，形成视差 */
+.bg-loop.far  .bg-track{ animation:bgDriftFar 84s linear infinite; }
+.bg-loop.near .bg-track{ animation:bgDriftNear 52s linear infinite; }
+
+@keyframes bgDriftFar{
+  0%{   transform:translate3d(0,0,0); }
+  50%{  transform:translate3d(-640px, 8px, 0); }
+  100%{ transform:translate3d(-1280px,0,0); }
+}
+@keyframes bgDriftNear{
+  0%{   transform:translate3d(0,0,0); }
+  50%{  transform:translate3d(-640px,-5px,0); }
+  100%{ transform:translate3d(-1280px,0,0); }
+}
+
+.sky{
+  position:absolute; left:0; right:0; top:0; height:360px;
+  background:linear-gradient(180deg, var(--sky) 0%, var(--sky-2) 100%);
+}
+
+/* 远景拱门 */
+.arches{
+  position:absolute; left:0; right:0; top:70px; height:270px;
+  display:flex; align-items:flex-end; justify-content:center; gap:56px;
+}
+.arch{
+  width:170px; height:230px;
+  background:var(--arch);
+  border-radius:85px 85px 0 0;
+  opacity:.85;
+}
+.arch:nth-child(2){ height:270px; opacity:.95; }
+.arch:nth-child(3){ height:200px; opacity:.7; }
+
+/* 拱门里的暗部（窗洞） */
+.arch::after{
+  content:"";
+  display:block;
+  width:110px; height:170px;
+  margin:60px auto 0;
+  background:#c6ecfb;
+  border-radius:55px 55px 0 0;
+}
+
+/* 柱子 */
+.pillar{
+  position:absolute; top:0; width:96px; height:352px;
+  background:linear-gradient(180deg, var(--pillar) 0%, var(--pillar-2) 100%);
+}
+.pillar::after{
+  content:"";
+  position:absolute; left:0; right:0; bottom:0; height:16px;
+  background:rgba(255,255,255,.10);
+}
+.pillar.left{ left:96px; }
+.pillar.right{ right:96px; }
+.pillar.mid-l{ left:300px; width:64px; height:330px; opacity:.55; }
+.pillar.mid-r{ right:300px; width:64px; height:330px; opacity:.55; }
+
+/* 垂下的竖幡 */
+.banner{
+  position:absolute; top:0; width:74px; height:190px;
+  background:linear-gradient(180deg,#1a219c,#070a7d);
+  border-radius:0 0 8px 8px;
+}
+.banner::after{
+  content:"";
+  position:absolute; left:50%; bottom:-14px;
+  width:0; height:0; margin-left:-37px;
+  border-left:37px solid transparent;
+  border-right:37px solid transparent;
+  border-top:16px solid #070a7d;
+}
+.banner.b1{ left:220px; height:210px; opacity:.85; }
+.banner.b2{ right:220px; height:230px; opacity:.85; }
+.banner.b3{ left:560px; height:150px; width:56px; opacity:.5; }
+.banner.b3::after{ margin-left:-28px; border-left-width:28px; border-right-width:28px; }
+
+/* 灯光 */
+.lamp{
+  position:absolute;
+  width:26px; height:26px; border-radius:50%;
+  background:var(--yellow);
+  box-shadow:0 0 0 10px rgba(242,217,140,.18);
+}
+.lamp.l1{ left:150px; top:150px; }
+.lamp.l2{ right:150px; top:120px; width:20px; height:20px; }
+.lamp.l3{ left:420px; top:60px; width:16px; height:16px; }
+.lamp.l4{ right:430px; top:40px; width:16px; height:16px; }
+
+/* 栏杆 */
+.rail{
+  position:absolute; left:0; right:0; top:312px; height:46px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 44px, rgba(7,10,125,.16) 44px 52px),
+    var(--rail);
+  border-top:4px solid #8fd9f3;
+  border-bottom:4px solid #8fd9f3;
+}
+.rail::after{
+  content:"";
+  position:absolute; left:0; right:0; top:16px; height:5px;
+  background:rgba(7,10,125,.10);
+}
+
+/* 地面 */
+.floor{
+  position:absolute; left:0; right:0; top:358px; bottom:0;
+  background:linear-gradient(180deg, #c9eefc 0%, #ddf7ff 26%, #eefbff 62%, #d4f2ff 100%);
+}
+/* 地砖横线（越近越疏） */
+.floor::before{
+  content:"";
+  position:absolute; inset:0;
+  background:
+    repeating-linear-gradient(180deg,
+      rgba(7,10,125,.10) 0 2px, transparent 2px 34px),
+    repeating-linear-gradient(180deg,
+      rgba(7,10,125,.08) 0 2px, transparent 2px 76px);
+  mask-image:linear-gradient(180deg, rgba(0,0,0,.9) 0%, rgba(0,0,0,.35) 60%, transparent 100%);
+}
+/* 地面中央亮光 */
+.floor::after{
+  content:"";
+  position:absolute; left:50%; top:40px;
+  width:900px; height:340px;
+  transform:translateX(-50%);
+  background:radial-gradient(ellipse 50% 50% at 50% 50%, rgba(255,255,255,.30), transparent 72%);
+}
+
+/* 地平线阴影 */
+.horizon{
+  position:absolute; left:0; right:0; top:352px; height:14px;
+  background:linear-gradient(180deg, rgba(7,10,125,.16), transparent);
+}
+
+/* 底部收边 */
+.floor-vignette{
+  position:absolute; left:0; right:0; bottom:0; height:150px;
+  background:linear-gradient(180deg, transparent, rgba(7,10,125,.13));
+  pointer-events:none;
+}
+
+/* ---------- 场景装饰：填补空处 ---------- */
+
+/* 吊灯 */
+.chandelier{
+  position:absolute; top:0; width:2px;
+  background:linear-gradient(180deg, rgba(7,10,125,.28), rgba(7,10,125,.10));
+}
+.chandelier::after{
+  content:"";
+  position:absolute; left:50%; bottom:-16px;
+  width:30px; height:30px; margin-left:-15px;
+  border-radius:50%;
+  background:var(--yellow);
+  box-shadow:0 0 0 13px rgba(242,217,140,.18), 0 0 46px 12px rgba(242,217,140,.22);
+}
+.chandelier.d1{ left:178px; height:180px; }
+.chandelier.d2{ right:178px; height:150px; }
+.chandelier.d2::after{ width:24px; height:24px; margin-left:-12px; bottom:-13px; }
+
+/* 拱门内侧挂幔 */
+.drape{
+  position:absolute; width:150px; height:120px;
+  background:linear-gradient(180deg, #bfe9fa 0%, #9ed9f2 100%);
+  border-radius:0 0 75px 75px;
+  opacity:.75;
+}
+.drape.dr1{ left:392px; top:118px; }
+.drape.dr2{ right:392px; top:118px; height:96px; }
+
+/* 左右矮木箱 */
+.crate{
+  position:absolute; bottom:34px;
+  width:88px; height:76px;
+  background:linear-gradient(180deg,#ffea9e 0%, #f2cf45 100%);
+  border-radius:9px;
+  box-shadow:inset 0 -12px 0 rgba(7,10,125,.09), inset 0 7px 0 rgba(255,255,255,.28),
+             0 7px 14px rgba(7,10,125,.16);
+}
+.crate::before{
+  content:"";
+  position:absolute; inset:9px 8px;
+  border:3px solid rgba(7,10,125,.13);
+  border-radius:5px;
+}
+.crate::after{
+  content:"";
+  position:absolute; left:14px; right:14px; top:50%; height:4px;
+  background:rgba(7,10,125,.13);
+  border-radius:2px;
+}
+.crate.cr1{ left:44px; }
+.crate.cr2{ right:230px; height:64px; }
+
+/* 地面光斑 */
+.pool{
+  position:absolute;
+  border-radius:50%;
+  background:radial-gradient(ellipse 50% 50% at 50% 50%, rgba(255,255,255,.55), transparent 72%);
+  pointer-events:none;
+}
+.pool.p1{ left:96px; bottom:96px; width:260px; height:120px; }
+.pool.p2{ right:96px; bottom:110px; width:230px; height:104px; }
+.pool.p3{ left:50%; top:392px; width:520px; height:90px; margin-left:-260px; opacity:.6; }
+
+/* 小石子 */
+.stone{
+  position:absolute; border-radius:50%;
+  background:#bccbd3;
+  box-shadow:inset 0 -2px 0 rgba(7,10,125,.14);
+  pointer-events:none;
+}
+.stone.s1{ left:246px; bottom:150px; width:14px; height:9px; }
+.stone.s2{ left:1002px; bottom:132px; width:17px; height:11px; }
+.stone.s3{ left:300px; bottom:60px; width:11px; height:7px; }
+.stone.s4{ right:262px; bottom:70px; width:13px; height:8px; }
+.stone.s5{ left:640px; bottom:34px; width:18px; height:11px; margin-left:-9px; }
+
+/* 浮尘 */
+.dust{
+  position:absolute; width:7px; height:7px;
+  border-radius:50%;
+  background:rgba(255,255,255,.85);
+  pointer-events:none;
+  animation:dustFloat 9s linear infinite;
+}
+@keyframes dustFloat{
+  0%{ transform:translateY(0) scale(.7); opacity:0; }
+  18%{ opacity:.85; }
+  80%{ opacity:.5; }
+  100%{ transform:translateY(-190px) scale(1); opacity:0; }
+}
+.dust.u1{ left:214px; bottom:120px; animation-delay:0s; }
+.dust.u2{ left:352px; bottom:60px; animation-delay:1.6s; width:5px; height:5px; }
+.dust.u3{ left:508px; bottom:150px; animation-delay:3.1s; }
+.dust.u4{ left:742px; bottom:96px; animation-delay:.8s; width:5px; height:5px; }
+.dust.u5{ left:898px; bottom:140px; animation-delay:2.4s; }
+.dust.u6{ left:1048px; bottom:70px; animation-delay:4.2s; width:5px; height:5px; }
+.dust.u7{ left:640px; bottom:180px; animation-delay:5.5s; }
+
+/* =========================================================
+   打击特效：彩色速度线 + 涂鸦字
+   ========================================================= */
+
+/* 放射状彩色线条 */
+.slash{
+  position:absolute; left:50%; top:38%;
+  width:11px; height:var(--len,92px);
+  margin-left:-5px;
+  border-radius:5px;
+  background:linear-gradient(180deg, var(--c,#ff4d6d) 0%, var(--c,#ff4d6d) 55%, transparent 100%);
+  transform-origin:50% 0%;
+  animation:slashOut .44s cubic-bezier(.15,.85,.3,1) forwards;
+  filter:drop-shadow(0 1px 2px rgba(7,10,125,.45));
+}
+@keyframes slashOut{
+  0%{ opacity:0; transform:rotate(var(--a,0deg)) translateY(-6px) scaleY(.15) scaleX(.6); }
+  26%{ opacity:1; transform:rotate(var(--a,0deg)) translateY(-14px) scaleY(.75) scaleX(1); }
+  100%{ opacity:0; transform:rotate(var(--a,0deg)) translateY(-92px) scaleY(1.1) scaleX(.4); }
+}
+
+/* 溅射粒子 */
+.spark{
+  position:absolute; left:50%; top:38%;
+  width:10px; height:10px;
+  margin:-5px 0 0 -5px;
+  border-radius:3px;
+  background:var(--c,#fff);
+  animation:sparkFly .55s cubic-bezier(.2,.7,.4,1) forwards;
+}
+@keyframes sparkFly{
+  0%{ opacity:1; transform:translate(0,0) scale(1) rotate(0deg); }
+  100%{ opacity:0; transform:translate(var(--dx,0), var(--dy,-40px)) scale(.3) rotate(180deg); }
+}
+
+/* 涂鸦字 */
+.graffiti{
+  position:absolute; left:50%; top:4%;
+  transform:translate(-50%,0) rotate(var(--rot,-6deg));
+  font-size:40px; font-weight:900;
+  letter-spacing:-2px;
+  line-height:1;
+  white-space:nowrap;
+  color:#fffdf7;
+  -webkit-text-stroke:6px #070a7d;
+  paint-order:stroke fill;
+  z-index:9;
+  animation:graffitiPop .72s cubic-bezier(.2,1.5,.4,1) forwards;
+  pointer-events:none;
+}
+.graffiti::before,
+.graffiti::after{
+  content:attr(data-t);
+  position:absolute; left:0; top:0;
+  -webkit-text-stroke:0;
+  z-index:-1;
+}
+.graffiti::before{ color:#ff5f8d; transform:translate(-6px,3px); }
+.graffiti::after{ color:#3ed2e8; transform:translate(6px,-3px); }
+
+.graffiti.small{ font-size:40px; -webkit-text-stroke:6px #070a7d; }
+.graffiti.bad{ color:#ffe4dc; -webkit-text-stroke-color:#7a2020; }
+.graffiti.bad::before{ color:#ff2f2f; }
+.graffiti.bad::after{ color:#ffb02e; }
+
+@keyframes graffitiPop{
+  0%{ opacity:0; transform:translate(-50%, 22px) rotate(var(--rot,-6deg)) scale(.35); }
+  30%{ opacity:1; transform:translate(-50%, -6px) rotate(var(--rot,-6deg)) scale(1.16); }
+  46%{ transform:translate(-50%, -2px) rotate(var(--rot,-6deg)) scale(.98); }
+  74%{ opacity:1; transform:translate(-50%, -14px) rotate(var(--rot,-6deg)) scale(1); }
+  100%{ opacity:0; transform:translate(-50%, -46px) rotate(var(--rot,-6deg)) scale(.94); }
+}
+
+/* 连击飘字（屏幕中央） */
+.combo-big{
+  position:absolute; left:50%; top:44%;
+  transform:translate(-50%,-50%);
+  font-size:64px; font-weight:900;
+  color:#fffdf7;
+  -webkit-text-stroke:8px #070a7d;
+  paint-order:stroke fill;
+  letter-spacing:2px;
+  z-index:16;
+  pointer-events:none;
+  animation:comboPop .9s cubic-bezier(.2,1.4,.4,1) forwards;
+}
+.combo-big::before,
+.combo-big::after{
+  content:attr(data-t);
+  position:absolute; left:0; top:0;
+  -webkit-text-stroke:0;
+  z-index:-1;
+}
+.combo-big::before{ color:#ffd166; transform:translate(-7px,4px); }
+.combo-big::after{ color:#ff5f8d; transform:translate(7px,-4px); }
+@keyframes comboPop{
+  0%{ opacity:0; transform:translate(-50%,-50%) scale(.4) rotate(-8deg); }
+  28%{ opacity:1; transform:translate(-50%,-50%) scale(1.12) rotate(2deg); }
+  44%{ transform:translate(-50%,-50%) scale(.96) rotate(-1deg); }
+  72%{ opacity:1; transform:translate(-50%,-50%) scale(1) rotate(0deg); }
+  100%{ opacity:0; transform:translate(-50%,-72%) scale(.92); }
+}
+
+/* =========================================================
+   氛围特效：底部火焰 + 霓虹边缘 + 速度线
+   ========================================================= */
+
+/* 漫画速度线（背景层，藏在洞口后面） */
+/* =========================================================
+   动态背景：全部是缓慢循环，不干扰视线
+   ========================================================= */
+
+/* 天空光晕缓慢漂移 */
+.sky::before{
+  content:"";
+  position:absolute; inset:-40% -25%;
+  background:
+    radial-gradient(ellipse 38% 55% at 28% 38%, rgba(255,255,255,.5), transparent 70%),
+    radial-gradient(ellipse 34% 48% at 74% 58%, rgba(196,224,242,.55), transparent 70%);
+  animation:skyDrift 20s ease-in-out infinite alternate;
+  pointer-events:none;
+}
+@keyframes skyDrift{
+  from{ transform:translate3d(-5%, 1%, 0); }
+  to{ transform:translate3d(5%, -1%, 0); }
+}
+
+/* 拱门呼吸 */
+.arch{ animation:archBreathe 9s ease-in-out infinite alternate; }
+@keyframes archBreathe{
+  from{ opacity:.62; }
+  to{ opacity:.95; }
+}
+
+/* 柱子：光影从上往下扫 */
+.pillar::before{
+  content:"";
+  position:absolute; inset:0;
+  background:linear-gradient(180deg, rgba(255,255,255,.13), transparent 62%);
+  animation:pillarSweep 7.5s ease-in-out infinite alternate;
+  pointer-events:none;
+}
+@keyframes pillarSweep{
+  from{ opacity:.25; transform:translateY(-6%); }
+  to{ opacity:1; transform:translateY(6%); }
+}
+
+/* 壁灯呼吸 */
+.lamp{ animation:lampBreathe 3.4s ease-in-out infinite; }
+@keyframes lampBreathe{
+  0%,100%{ opacity:.7; box-shadow:0 0 0 8px rgba(242,217,140,.10); }
+  50%{ opacity:1; box-shadow:0 0 0 15px rgba(242,217,140,.24), 0 0 32px 8px rgba(242,217,140,.32); }
+}
+
+/* 地面光斑漂移 */
+.pool{ animation:poolDrift 13s ease-in-out infinite alternate; }
+@keyframes poolDrift{
+  from{ transform:translate3d(-16px, 2px, 0) scale(1); }
+  to{ transform:translate3d(16px, -6px, 0) scale(1.07); }
+}
+
+/* 飘过的云影 */
+.cloud{
+  position:absolute; left:0;
+  width:560px; height:190px;
+  border-radius:50%;
+  background:radial-gradient(ellipse at 50% 50%, rgba(255,255,255,.38), transparent 68%);
+  filter:blur(22px);
+  pointer-events:none;
+  animation:cloudDrift linear infinite;
+}
+.cloud.cl1{ top:40px;  animation-duration:34s; animation-delay:-6s;  opacity:.55; }
+.cloud.cl2{ top:150px; animation-duration:46s; animation-delay:-22s; opacity:.4;  height:140px; width:420px; }
+.cloud.cl3{ top:240px; animation-duration:58s; animation-delay:-38s; opacity:.32; height:110px; width:340px; }
+@keyframes cloudDrift{
+  from{ transform:translate3d(-620px, 0, 0); }
+  to{ transform:translate3d(1400px, -18px, 0); }
+}
+
+/* 速度线 */
+.speedlines{
+  position:absolute; inset:-25%;
+  pointer-events:none;
+  background:repeating-linear-gradient(112deg,
+    transparent 0 48px,
+    rgba(255,255,255,.42) 48px 51px,
+    transparent 51px 100px);
+  opacity:calc(.10 + var(--energy,0) * .16);
+  animation:speedMove 9s linear infinite;
+  transition:opacity .4s;
+}
+@keyframes speedMove{
+  from{ transform:translate3d(0,0,0); }
+  to{ transform:translate3d(-100px,44px,0); }
+}
+
+/* 霓虹边缘 */
+.neon{
+  position:absolute; inset:0; pointer-events:none; z-index:15;
+  box-shadow:
+    inset 0 0 70px rgba(70,215,255, calc(.14 + var(--energy,0) * .26)),
+    inset 0 0 150px rgba(255,90,200, calc(.08 + var(--energy,0) * .20));
+  transition:box-shadow .35s;
+}
+
+/* =========================================================
+   BONUS 时刻：金光史莱姆从洞里钻出 + 推镜
+   ========================================================= */
+
+/* UI 淡出 */
+.hud-left, .topbar, .bubble, .hud-right{
+  transition:opacity .25s ease, transform .25s ease;
+}
+.screen.bonus .hud-left,
+.screen.bonus .topbar,
+.screen.bonus .bubble,
+.screen.bonus .hud-right{
+  opacity:0;
+  transform:translateY(-16px);
+  pointer-events:none;
+}
+
+.bonus-layer{
+  position:absolute; inset:0;
+  z-index:25;
+  pointer-events:none;
+  opacity:0; visibility:hidden;
+  transition:opacity .2s;
+}
+.bonus-layer.on{ opacity:1; visibility:visible; }
+
+.bonus-vignette{
+  position:absolute; inset:0;
+  background:radial-gradient(circle at 50% 54%, transparent 40%, rgba(28,10,44,.45) 100%);
+}
+
+/* BONUS! 标题 */
+.bonus-title{
+  position:absolute; left:50%; top:12%;
+  transform:translate(-50%,-50%) rotate(-5deg);
+  font-size:70px; font-weight:900; letter-spacing:4px;
+  color:#fffdf7;
+  -webkit-text-stroke:9px #070a7d;
+  paint-order:stroke fill;
+  z-index:2;
+  animation:titleSlide .5s cubic-bezier(.2,1.6,.4,1) both;
+}
+.bonus-title::before,
+.bonus-title::after{
+  content:attr(data-t);
+  position:absolute; left:0; top:0;
+  -webkit-text-stroke:0;
+}
+.bonus-title::before{ color:#ff2f7d; transform:translate(-9px,6px); }
+.bonus-title::after{ color:#2fe0ff; transform:translate(9px,-6px); }
+@keyframes titleSlide{
+  0%{ opacity:0; transform:translate(-50%,-50%) rotate(-5deg) scale(2.4); }
+  100%{ opacity:1; transform:translate(-50%,-50%) rotate(-5deg) scale(1); }
+}
+
+/* 金光史莱姆：挂在洞口所在的格子里，从洞里升起 */
+.cell .bonus-slime{
+  position:absolute; left:50%; bottom:46px;
+  width:88%; margin-left:-44%;
+  transform-origin:50% 100%;
+  z-index:6;
+  pointer-events:auto;
+  cursor:pointer;
+  animation:bonusRise .42s cubic-bezier(.2,1.5,.42,1) both;
+}
+@keyframes bonusRise{
+  0%{ opacity:0; transform:translateY(85%) scale(.45); }
+  70%{ opacity:1; transform:translateY(-6%) scale(1.06); }
+  100%{ opacity:1; transform:translateY(0) scale(1); }
+}
+.bonus-slime img{
+  position:relative; z-index:2;
+  width:100%; display:block;
+  -webkit-mask-image:linear-gradient(180deg, #000 82%, transparent 99%);
+  mask-image:linear-gradient(180deg, #000 82%, transparent 99%);
+  filter:
+    drop-shadow(0 0 16px rgba(255,236,130,1))
+    drop-shadow(0 0 46px rgba(255,150,50,.95))
+    brightness(1.15) saturate(1.25);
+  animation:slimePulse .5s ease-in-out infinite alternate;
+}
+@keyframes slimePulse{
+  from{ transform:scale(.96); }
+  to{ transform:scale(1.05); }
+}
+.bonus-halo{
+  position:absolute; inset:-40%;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(255,240,150,.62) 0%, rgba(255,170,60,.30) 42%, transparent 68%);
+  animation:haloPulse .7s ease-in-out infinite alternate;
+  z-index:1;
+}
+@keyframes haloPulse{
+  from{ transform:scale(.86); opacity:.7; }
+  to{ transform:scale(1.14); opacity:1; }
+}
+.bonus-ring{
+  position:absolute; inset:-20%;
+  border-radius:50%;
+  background:conic-gradient(from 0deg, #ff2f7d, #ffd166, #2fe0ff, #9b5de5, #ff7a3d, #ff2f7d);
+  -webkit-mask:radial-gradient(circle, transparent 62%, #000 64%, #000 70%, transparent 72%);
+  mask:radial-gradient(circle, transparent 62%, #000 64%, #000 70%, transparent 72%);
+  animation:ringSpin 2.4s linear infinite;
+  z-index:0;
+}
+@keyframes ringSpin{ to{ transform:rotate(360deg); } }
+
+/* 内层：负责每次被打的弹跳 */
+.bs-inner{
+  position:relative;
+  width:100%; height:100%;
+  transform-origin:50% 100%;
+}
+.bs-inner.punch{ animation:bsPunch .26s cubic-bezier(.2,1.7,.4,1); }
+@keyframes bsPunch{
+  0%{ transform:scale(1) rotate(0deg); }
+  34%{ transform:scale(1.3) rotate(-5deg); }
+  70%{ transform:scale(.93) rotate(2deg); }
+  100%{ transform:scale(1) rotate(0deg); }
+}
+
+/* 爆炸：史莱姆冲向镜头 */
+.cell .bonus-slime.boom{
+  animation:bonusBoom .46s cubic-bezier(.2,.85,.3,1) forwards !important;
+  pointer-events:none;
+}
+@keyframes bonusBoom{
+  0%{ opacity:1; transform:translateY(0) scale(1) rotate(0deg); filter:none; }
+  24%{ opacity:1; transform:translateY(-4%) scale(1.28) rotate(-4deg); }
+  100%{ opacity:0; transform:translateY(-26%) scale(4.6) rotate(8deg); filter:blur(6px); }
+}
+
+/* 爆炸瞬间的全屏白闪 */
+.screen.boom-flash::after{
+  content:"";
+  position:absolute; inset:0;
+  background:radial-gradient(circle at 50% 50%, rgba(255,255,255,.95), rgba(255,240,190,.5) 40%, transparent 72%);
+  animation:boomFlash .26s ease-out forwards;
+  pointer-events:none;
+  z-index:26;
+}
+@keyframes boomFlash{
+  0%{ opacity:1; }
+  100%{ opacity:0; }
+}
+
+/* 出发洞口发光 */
+.cell.bonus-hole .hole{
+  box-shadow:
+    inset 0 8px 13px rgba(0,0,0,.34),
+    0 0 0 6px rgba(255,220,120,.9),
+    0 0 34px 10px rgba(255,180,60,.75);
+}
+
+/* 倒计时 + 提示 */
+.bonus-timer{
+  position:absolute; left:50%; top:84%;
+  transform:translateX(-50%);
+  font-size:40px; font-weight:900;
+  font-variant-numeric:tabular-nums;
+  color:#fffdf7;
+  -webkit-text-stroke:7px #070a7d;
+  paint-order:stroke fill;
+  letter-spacing:2px;
+}
+.bonus-tip{
+  position:absolute; left:50%; top:93%;
+  transform:translateX(-50%);
+  font-size:12px; font-weight:800; letter-spacing:3px;
+  color:#fff100;
+  white-space:nowrap;
+}
+
+/* 结算数字 */
+.blocks{ position:absolute; inset:0; pointer-events:none; z-index:30; }
+.bonus-num{
+  position:absolute; left:50%; top:32%;
+  transform:translate(-50%,0);
+  font-size:68px; font-weight:900;
+  color:#fff36b;
+  -webkit-text-stroke:11px #070a7d;
+  paint-order:stroke fill;
+  animation:numUp .85s cubic-bezier(.2,.8,.3,1) forwards;
+  z-index:2;
+  white-space:nowrap;
+}
+
+/* =========================================================
+   暴力全屏打击特效 · 梵高《星月夜》式旋涡笔触
+   ========================================================= */
+/* =========================================================
+   打击特效 · Muse Dash 风（命中点附近的局部爆散）
+   ========================================================= */
+.impact-layer{
+  position:absolute; inset:0;
+  z-index:12;
+  pointer-events:none;
+  overflow:hidden;
+}
+
+/* 冲击圆环（小范围） */
+.ring-pop{
+  position:absolute;
+  width:var(--w,120px); height:var(--w,120px);
+  margin-left:calc(var(--w,120px) / -2);
+  margin-top:calc(var(--w,120px) / -2);
+  border-radius:50%;
+  border:var(--bw,7px) solid var(--c,#ff2e88);
+  animation:ringPop .38s cubic-bezier(.15,.8,.3,1) forwards;
+}
+@keyframes ringPop{
+  0%{ opacity:1; transform:scale(.18); }
+  100%{ opacity:0; transform:scale(1.75); }
+}
+
+/* 爆散色块（带粗描边，原地炸开一小圈） */
+.pop-block{
+  position:absolute;
+  width:var(--w,30px); height:var(--h,30px);
+  background:var(--c,#ff2e88);
+  border:4px solid #070a7d;
+  border-radius:var(--r,3px);
+  box-shadow:0 2px 0 rgba(29,23,48,.35);
+  animation:popBlock var(--t,.42s) cubic-bezier(.15,.8,.3,1) forwards;
+}
+@keyframes popBlock{
+  0%{ opacity:1; transform:translate(-50%,-50%) scale(.45) rotate(0deg); }
+  34%{ opacity:1; transform:translate(calc(-50% + var(--dx) * .6), calc(-50% + var(--dy) * .6)) scale(1.15) rotate(calc(var(--rot) * .55)); }
+  100%{ opacity:0; transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.7) rotate(var(--rot,0deg)); }
+}
+
+/* 四角星闪光 */
+.star-pop{
+  position:absolute;
+  width:var(--w,26px); height:var(--w,26px);
+  margin-left:calc(var(--w,26px) / -2);
+  margin-top:calc(var(--w,26px) / -2);
+  background:var(--c,#fff);
+  clip-path:polygon(50% 0%, 60% 38%, 100% 50%, 60% 62%, 50% 100%, 40% 62%, 0% 50%, 40% 38%);
+  animation:starPop .34s ease-out forwards;
+}
+@keyframes starPop{
+  0%{ opacity:0; transform:scale(.2) rotate(0deg); }
+  30%{ opacity:1; transform:scale(1.25) rotate(20deg); }
+  100%{ opacity:0; transform:scale(.5) rotate(70deg); }
+}
+
+/* 命中点的白色爆闪点 */
+.hit-burst{
+  position:absolute;
+  width:var(--w,90px); height:var(--w,90px);
+  margin-left:calc(var(--w,90px) / -2);
+  margin-top:calc(var(--w,90px) / -2);
+  border-radius:50%;
+  background:radial-gradient(circle, #fff 0%, var(--c,#ffd23f) 38%, transparent 70%);
+  animation:hitBurst .26s ease-out forwards;
+}
+@keyframes hitBurst{
+  0%{ opacity:1; transform:scale(.3); }
+  100%{ opacity:0; transform:scale(1.5); }
+}
+
+/* 史莱姆被打飞出屏幕 */
+.fling{
+  position:absolute; left:50%; top:24%;
+  width:52%; margin-left:-26%;
+  z-index:7;
+  pointer-events:none;
+  animation:flingOut .68s cubic-bezier(.2,.45,.35,1) forwards;
+}
+@keyframes flingOut{
+  0%{ opacity:1; transform:translate(0,0) rotate(0deg) scale(1); }
+  15%{ opacity:1; transform:translate(calc(var(--dx) * .1), calc(var(--dy) * .1 - 26px)) rotate(calc(var(--rot) * .12)) scale(1.08); }
+  100%{ opacity:0; transform:translate(var(--dx), calc(var(--dy) + 160px)) rotate(var(--rot)) scale(.35); }
+}
+/* 全屏白闪 */
+.flash-white{
+  position:absolute; inset:0; z-index:12;
+  background:#fff;
+  opacity:0;
+  pointer-events:none;
+}
+.flash-white.on{ animation:whiteFlash .18s ease-out; }
+@keyframes whiteFlash{
+  0%{ opacity:.55; } 100%{ opacity:0; }
+}
+
+/* =========================================================
+   玩法：三排洞穴（近大远小）
+   ========================================================= */
+.field{ position:absolute; inset:0; }
+
+.cell{
+  position:absolute;
+  width:212px; height:132px;
+  transform-origin:bottom center;
+  cursor:pointer;
+  touch-action:manipulation;
+}
+
+/* 排布与透视：近大远小 */
+.cell.r1{ top:320px; transform:scale(.78); z-index:1; }
+.cell.r2{ top:435px; transform:scale(.89); z-index:2; }
+.cell.r3{ top:550px; transform:scale(1.00); z-index:3; }
+.cell.c1{ left:268px; }
+.cell.c2{ left:534px; }
+.cell.c3{ left:800px; }
+
+/* 洞 */
+.hole{
+  position:absolute; left:50%; bottom:26px;
+  width:150px; height:58px;
+  margin-left:-75px;
+  background:var(--hole);
+  border-radius:50%;
+  box-shadow:inset 0 8px 13px rgba(0,0,0,.34);
+}
+.hole::before{
+  content:"";
+  position:absolute; left:9%; right:9%; top:3px; height:12px;
+  border-radius:50%;
+  border-top:3px solid rgba(255,255,255,.30);
+}
+
+/* 洞前沿：同色椭圆的下半，盖住史莱姆底座 */
+.hole-front{
+  position:absolute; left:50%; bottom:26px;
+  width:150px; height:58px;
+  margin-left:-75px;
+  background:var(--hole);
+  border-radius:50%;
+  clip-path:inset(55% 0 0 0);
+  z-index:4;
+}
+
+/* 史莱姆 */
+.slot{
+  position:absolute; left:50%; bottom:48px;
+  width:106px; margin-left:-53px;
+  transform:translateY(30%) scale(.16);
+  transform-origin:bottom center;
+  opacity:0;
+  transition:transform .16s cubic-bezier(.2,1.35,.45,1), opacity .1s linear;
+  z-index:3;
+  pointer-events:none;
+}
+.slot.up{ opacity:1; transform:translateY(0) scale(1); }
+.slot img{ display:block; width:100%; filter:drop-shadow(0 6px 6px rgba(7,10,125,.35)); }
+
+/* 预警：洞发光 */
+.cell.warn .hole{
+  box-shadow:
+    inset 0 10px 18px rgba(0,0,0,.42),
+    0 0 0 5px rgba(242,217,140,.85),
+    0 8px 18px rgba(232,180,60,.45);
+}
+
+/* =========================================================
+   特效
+   ========================================================= */
+.fx{ position:absolute; inset:0; pointer-events:none; z-index:8; }
+
+.num{
+  position:absolute; left:50%; top:8%;
+  transform:translate(-50%,0);
+  font-size:26px; font-weight:900;
+  color:#fffaf0;
+  letter-spacing:1px;
+  text-shadow:0 3px 0 rgba(7,10,125,.55), 0 0 14px rgba(7,10,125,.35);
+  animation:numUp .75s cubic-bezier(.2,.8,.3,1) forwards;
+  white-space:nowrap;
+}
+.num.gold{ color:#ffe07a; font-size:30px; }
+.num.ice{ color:#e6f6ff; }
+.num.bad{ color:#ffb4a4; font-size:20px; }
+@keyframes numUp{
+  0%{ opacity:0; transform:translate(-50%, 14px) scale(.7); }
+  22%{ opacity:1; transform:translate(-50%, -4px) scale(1.08); }
+  100%{ opacity:0; transform:translate(-50%, -52px) scale(1); }
+}
+
+.coin-pop{
+  position:absolute; left:50%; top:16%;
+  width:28px; margin-left:-14px;
+  animation:coinUp .85s cubic-bezier(.2,.7,.4,1) forwards;
+}
+@keyframes coinUp{
+  0%{ opacity:0; transform:translateY(8px) scale(.5); }
+  20%{ opacity:1; transform:translateY(-6px) scale(1.1); }
+  100%{ opacity:0; transform:translateY(-64px) scale(.8); }
+}
+
+/* 命中光圈 */
+.cell.hit .hole::before{
+  content:"";
+  position:absolute; left:50%; top:50%;
+  width:200%; height:200%;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(255,250,225,.9), transparent 60%);
+  animation:ringOut .32s ease-out forwards;
+  z-index:6;
+}
+@keyframes ringOut{
+  from{ opacity:1; transform:translate(-50%,-50%) scale(.4); }
+  to{ opacity:0; transform:translate(-50%,-50%) scale(1.3); }
+}
+
+/* 屏幕抖动 */
+.screen.shake{ animation:shake .3s ease-out; }
+@keyframes shake{
+  0%,100%{ transform:translate(-50%,-50%) scale(var(--k,1)); }
+  20%{ transform:translate(calc(-50% - 7px), calc(-50% + 4px)) scale(var(--k,1)); }
+  45%{ transform:translate(calc(-50% + 6px), calc(-50% - 4px)) scale(var(--k,1)); }
+  70%{ transform:translate(calc(-50% - 3px), calc(-50% + 2px)) scale(var(--k,1)); }
+}
+
+/* =========================================================
+   UI
+   ========================================================= */
+
+/* 左上：商店 / 转盘 */
+.hud-left{
+  position:absolute; left:22px; top:18px;
+  display:flex; flex-direction:column; gap:10px;
+  z-index:20;
+}
+.menu-btn{
+  width:78px; height:74px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+  background:var(--cream);
+  border:none; border-radius:12px;
+  box-shadow:0 4px 0 rgba(7,10,125,.22), inset 0 0 0 2px rgba(7,10,125,.10);
+  color:var(--ink);
+  font-family:inherit; font-size:11px; font-weight:800; letter-spacing:1px;
+  cursor:pointer;
+  transition:transform .1s, background .15s;
+}
+.menu-btn img{ width:38px; height:38px; object-fit:contain; }
+.menu-btn svg{ width:36px; height:36px; display:block; }
+.menu-btn:hover{ background:var(--yellow); }
+.menu-btn:active{ transform:translateY(3px); box-shadow:0 1px 0 rgba(7,10,125,.22); }
+
+/* 左上：金币 */
+.coins{
+  display:flex; align-items:center; gap:8px;
+  height:46px; padding:0 16px 0 8px;
+  background:var(--cream);
+  border-radius:12px;
+  box-shadow:0 3px 0 rgba(7,10,125,.18), inset 0 0 0 2px rgba(7,10,125,.08);
+  font-size:19px; font-weight:900;
+  font-variant-numeric:tabular-nums;
+  color:var(--ink);
+}
+.coins img{ width:32px; height:32px; object-fit:contain; }
+
+/* 武器等级徽章 */
+.wlv{
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  height:34px; padding:0 11px;
+  background:var(--cream);
+  border-radius:10px;
+  box-shadow:0 3px 0 rgba(7,10,125,.16), inset 0 0 0 2px rgba(7,10,125,.08);
+  font-size:10px; font-weight:900; letter-spacing:1px;
+  color:rgba(7,10,125,.72);
+}
+.wlv b{ font-size:15px; color:var(--ink); font-variant-numeric:tabular-nums; letter-spacing:0; }
+.wlv i{ font-style:normal; font-size:12px; font-weight:900; color:#ff7031; font-variant-numeric:tabular-nums; }
+
+/* 商店按钮：可升级红点 */
+.menu-btn{ position:relative; }
+.menu-btn .dot{
+  position:absolute; right:-4px; top:-4px;
+  width:13px; height:13px; border-radius:50%;
+  background:#ff2e88;
+  box-shadow:0 0 0 3px rgba(247,241,227,.95);
+  opacity:0; transform:scale(.3);
+  transition:opacity .15s, transform .15s;
+}
+.menu-btn.can-up .dot{ opacity:1; transform:none; animation:dotPulse 1.15s ease-in-out infinite; }
+@keyframes dotPulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.32); } }
+
+/* 顶部进度条 */
+.topbar{
+  position:absolute; left:50%; top:26px;
+  transform:translateX(-50%);
+  width:620px; height:34px;
+  display:flex; align-items:center; gap:10px;
+  z-index:20;
+}
+.track{
+  position:relative; flex:1; height:18px;
+  background:var(--cream-2);
+  border-radius:9px;
+  box-shadow:inset 0 2px 3px rgba(7,10,125,.14), 0 0 0 2px rgba(7,10,125,.10);
+  overflow:hidden;
+}
+.track > i{
+  display:block; height:100%; width:0%;
+  background:linear-gradient(180deg, var(--yellow) 0%, var(--yellow-2) 100%);
+  border-radius:9px;
+  transition:width .3s cubic-bezier(.2,.9,.3,1);
+}
+.track-label{
+  min-width:96px; height:32px;
+  display:flex; align-items:center; justify-content:center;
+  padding:0 12px;
+  background:var(--cream);
+  border-radius:8px;
+  box-shadow:0 3px 0 rgba(7,10,125,.18);
+  font-size:14px; font-weight:900;
+  font-variant-numeric:tabular-nums;
+}
+.track-name{
+  font-size:12px; font-weight:800; color:rgba(7,10,125,.72);
+  letter-spacing:2px;
+  min-width:76px; text-align:right;
+}
+
+/* 当前连击：和打击涂鸦字同一套风格（粗描边 + 品红/青错位） */
+.combo-line{
+  position:absolute; left:50%; top:74px;
+  transform:translateX(-50%);
+  display:flex; align-items:baseline; gap:8px;
+  z-index:20;
+  pointer-events:none;
+  white-space:nowrap;
+}
+.combo-line .cl-label{
+  font-size:14px; font-weight:900; letter-spacing:4px;
+  color:#fffdf7;
+  -webkit-text-stroke:3.2px #070a7d;
+  paint-order:stroke fill;
+  transform:rotate(-3deg);
+}
+.combo-line b{
+  font-size:29px; font-weight:900;
+  line-height:1;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:0;
+  display:inline-block;
+  transform-origin:50% 60%;
+}
+/* 内层：常驻呼吸，幅度由 --breath 控制（打击后临时变大） */
+.combo-line b i{
+  position:relative;
+  display:inline-block;
+  font-style:normal;
+  color:#fffdf7;
+  -webkit-text-stroke:5px #070a7d;
+  paint-order:stroke fill;
+  transform-origin:50% 62%;
+  animation:comboBreath 2.6s ease-in-out infinite;
+}
+@keyframes comboBreath{
+  0%,100%{ transform:scale(1); }
+  50%{ transform:scale(var(--breath, 1.07)); }
+}
+.combo-line b i::before,
+.combo-line b i::after{
+  content:attr(data-t);
+  position:absolute; left:0; top:0;
+  -webkit-text-stroke:0;
+  z-index:-1;
+}
+.combo-line b i::before{ color:#ff2e88; transform:translate(-3px,2px); }
+.combo-line b i::after{ color:#2ee6f6; transform:translate(3px,-2px); }
+.combo-line b.pop{ animation:comboTick .28s cubic-bezier(.2,1.8,.4,1); }
+@keyframes comboTick{
+  0%{ transform:scale(1) rotate(0deg); }
+  38%{ transform:scale(1.6) rotate(-6deg); }
+  72%{ transform:scale(.94) rotate(2deg); }
+  100%{ transform:scale(1) rotate(0deg); }
+}
+
+/* 右上：提示气泡 */
+.bubble{
+  position:absolute; right:26px; top:84px;
+  max-width:330px;
+  padding:14px 18px;
+  background:var(--cream);
+  border-radius:12px;
+  box-shadow:0 4px 0 rgba(7,10,125,.22), inset 0 0 0 2px rgba(7,10,125,.12);
+  font-size:15px; font-weight:800; line-height:1.5;
+  letter-spacing:1px;
+  color:var(--ink);
+  transform-origin:100% 0;
+  transition:transform .2s, opacity .2s;
+  z-index:20;
+}
+.bubble::before{
+  content:"";
+  position:absolute; left:-12px; top:18px;
+  width:0; height:0;
+  border-top:10px solid transparent;
+  border-bottom:10px solid transparent;
+  border-right:12px solid var(--cream);
+}
+.bubble.hide{ opacity:0; transform:scale(.92) translateY(-6px); pointer-events:none; }
+
+/* 右下：功能圆钮 */
+.hud-right{
+  position:absolute; right:26px; bottom:26px;
+  display:flex; gap:14px;
+  z-index:20;
+}
+.round-btn{
+  width:64px; height:64px;
+  border-radius:50%;
+  border:none;
+  background:rgba(7,10,125,.52);
+  color:var(--paper);
+  font-family:inherit; font-size:12px; font-weight:800; letter-spacing:1px;
+  cursor:pointer;
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.18);
+  transition:background .15s, transform .1s;
+}
+.round-btn:hover{ background:rgba(7,10,125,.72); }
+.round-btn:active{ transform:scale(.94); }
+
+/* 开场 / 结算 */
+.veil{
+  position:absolute; inset:0; z-index:40;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;
+  background:rgba(207,220,228,.80);
+  transition:opacity .25s;
+}
+.veil.hide{ opacity:0; pointer-events:none; }
+
+.veil-card{
+  display:flex; flex-direction:column; align-items:center; gap:14px;
+  padding:34px 54px 38px;
+  background:var(--cream);
+  border-radius:20px;
+  box-shadow:0 10px 0 rgba(7,10,125,.20), inset 0 0 0 3px rgba(7,10,125,.10);
+}
+.veil-card h1{
+  margin:0;
+  font-size:38px; font-weight:900; letter-spacing:12px;
+  color:var(--ink);
+}
+.veil-card p{
+  margin:0; font-size:13px; font-weight:700; letter-spacing:3px;
+  color:rgba(7,10,125,.6);
+}
+.start-btn{
+  margin-top:8px;
+  height:54px; padding:0 56px;
+  border:none; border-radius:14px;
+  background:var(--yellow);
+  color:#4a3a12;
+  font-family:inherit; font-size:18px; font-weight:900; letter-spacing:8px;
+  cursor:pointer;
+  box-shadow:0 6px 0 var(--yellow-2);
+  transition:transform .1s, box-shadow .1s;
+}
+.start-btn:active{ transform:translateY(4px); box-shadow:0 2px 0 var(--yellow-2); }
+
+/* 商店 / 转盘弹窗 */
+.modal{
+  position:absolute; inset:0; z-index:50;
+  display:grid; place-items:center;
+  background:rgba(7,10,125,.46);   /* 用半透明压暗即可，不用 backdrop-filter：无头浏览器截图会错位 */
+  opacity:0; pointer-events:none;
+  transition:opacity .18s;
+}
+.modal.open{ opacity:1; pointer-events:auto; }
+
+.modal-card{
+  width:420px;
+  background:var(--cream);
+  border-radius:18px;
+  box-shadow:0 12px 0 rgba(7,10,125,.22), inset 0 0 0 3px rgba(7,10,125,.10);
+  overflow:hidden;
+  transform:translateY(12px) scale(.97);
+  transition:transform .2s cubic-bezier(.2,.9,.3,1.3);
+}
+.modal.open .modal-card{ transform:none; }
+
+.modal-head{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 20px;
+  background:rgba(7,10,125,.07);
+}
+.modal-head b{ font-size:16px; letter-spacing:6px; }
+.modal-close{
+  width:30px; height:30px;
+  border:none; border-radius:9px;
+  background:rgba(7,10,125,.12);
+  color:var(--ink);
+  font-family:inherit; font-size:13px;
+  cursor:pointer;
+}
+.modal-close:hover{ background:rgba(7,10,125,.22); }
+
+.modal-body{
+  display:flex; flex-direction:column; align-items:center; gap:10px;
+  padding:28px 20px 30px;
+}
+.modal-body img{ width:110px; height:110px; object-fit:contain; }
+.modal-body p{ margin:0; font-size:14px; font-weight:800; letter-spacing:2px; }
+.modal-body small{ font-size:11px; letter-spacing:1px; color:rgba(7,10,125,.55); }
+
+/* 弹窗头部图标 */
+.modal-head .mh-left{ display:flex; align-items:center; gap:10px; min-width:0; }
+.modal-head .mh-left img{ width:30px; height:30px; object-fit:contain; }
+
+/* 弹窗尺寸变体（转盘 / 老虎机已拆成独立页面，这里只留商店） */
+.modal-card.shop{ width:440px; }
+.modal-card.shop .modal-body{ padding:22px 24px 24px; }
+.modal-card.lvup{ animation:lvupPop .42s cubic-bezier(.2,1.4,.4,1); }
+@keyframes lvupPop{
+  0%{ transform:scale(1); }
+  35%{ transform:scale(1.045); }
+  100%{ transform:scale(1); }
+}
+
+/* ============ 商店 ============ */
+.shop-wrap{ display:flex; flex-direction:column; gap:14px; width:100%; }
+.shop-hero{ display:flex; align-items:center; gap:16px; }
+.shop-hero > img{
+  width:92px; height:92px; object-fit:contain; flex:0 0 auto;
+  filter:drop-shadow(0 5px 6px rgba(7,10,125,.22));
+}
+.shop-info{ flex:1; display:flex; flex-direction:column; gap:7px; }
+.shop-lv{
+  font-size:23px; font-weight:900; line-height:1;
+  letter-spacing:1px; font-variant-numeric:tabular-nums;
+}
+.shop-lv small{ font-size:10px; font-weight:800; letter-spacing:2px; color:rgba(7,10,125,.5); margin-left:8px; }
+.shop-mult{ font-size:12px; font-weight:800; color:rgba(7,10,125,.62); letter-spacing:.5px; }
+.shop-mult b{ color:#ff7031; font-variant-numeric:tabular-nums; font-size:13px; }
+
+.pips{ display:flex; gap:5px; width:100%; }
+.pips i{
+  flex:1; height:8px; border-radius:4px;
+  background:rgba(7,10,125,.13);
+  transition:background .25s, transform .25s;
+}
+.pips i.on{ background:linear-gradient(180deg,var(--yellow),var(--yellow-2)); }
+.pips i.now{ transform:scaleY(1.5); }
+
+.buy-btn{
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  width:100%; height:54px;
+  border:none; border-radius:14px;
+  background:linear-gradient(180deg,var(--yellow),var(--yellow-2));
+  color:var(--ink);
+  font-family:inherit; font-size:16px; font-weight:900; letter-spacing:4px;
+  box-shadow:0 5px 0 var(--ink);
+  cursor:pointer;
+  transition:transform .1s, box-shadow .1s, filter .18s;
+}
+.buy-btn b{ font-variant-numeric:tabular-nums; letter-spacing:0; }
+.buy-btn:active:not(:disabled){ transform:translateY(4px); box-shadow:0 1px 0 var(--ink); }
+.buy-btn:disabled{
+  background:linear-gradient(180deg,#e7f8ff,#d9f1ff);
+  color:rgba(7,10,125,.52);
+  box-shadow:0 5px 0 rgba(7,10,125,.16);
+  cursor:not-allowed;
+}
+.buy-btn:disabled b{ color:rgba(7,10,125,.52); }
+.buy-btn.done{
+  background:rgba(7,10,125,.12); color:rgba(7,10,125,.62);
+  box-shadow:0 5px 0 rgba(7,10,125,.16); letter-spacing:3px;
+}
+.shop-foot{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  font-size:11px; font-weight:800; letter-spacing:1px; color:rgba(7,10,125,.5);
+  font-variant-numeric:tabular-nums;
+}
+.shop-foot b{ color:var(--ink); font-size:12px; }
+.shop-foot .ghost-row{ display:flex; gap:6px; }
+.shop-note{
+  font-size:10px; font-weight:700; letter-spacing:1px;
+  color:rgba(7,10,125,.42); text-align:center;
+  margin-top:-4px;
+}
+.ghost-btn{
+  border:none; border-radius:7px; padding:5px 9px;
+  background:rgba(7,10,125,.10); color:rgba(7,10,125,.66);
+  font-family:inherit; font-size:10px; font-weight:800; letter-spacing:1px;
+  cursor:pointer; transition:background .15s, color .15s;
+}
+.ghost-btn:hover{ background:rgba(7,10,125,.20); color:var(--ink); }
+
+/* 横屏提示 */
+.rotate-hint{
+  position:fixed; inset:0; z-index:999;
+  display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+  background:#0e1418; color:#dfe8ec;
+  font-size:14px; letter-spacing:3px;
+}
+.rotate-hint .ico{
+  width:64px; height:64px;
+  border:2px solid rgba(223,232,236,.4);
+  border-radius:12px;
+  display:grid; place-items:center; font-size:28px;
+  animation:rotateSpin 2.4s ease-in-out infinite;
+}
+@keyframes rotateSpin{
+  0%,30%{ transform:rotate(0); }
+  60%,100%{ transform:rotate(90deg); }
+}
+@media (orientation:portrait) and (max-width:900px){
+  .rotate-hint{ display:flex; }
+}
+
+/* 鼠标 */
+#hammer{
+  position:fixed; left:0; top:0;
+  width:58px; height:58px;
+  pointer-events:none; z-index:9999;
+  transform:translate(-300px,-300px);
+  display:none;
+}
+body.modal-open #hammer{ opacity:0; }
+#hammer .hm{ transform-origin:15px 15px; transform:rotate(-16deg); transition:transform .09s ease-out; }
+#hammer.hit .hm{ transform:rotate(24deg); }
+@media (pointer:fine){ #hammer{ display:block; } }
+
+/* =========================================================
+   光景主题层（浅天蓝 / 深靛蓝 / 亮黄 · 纸白卡片 · 硬阴影）
+   ========================================================= */
+
+/* 纸张颗粒 */
+.grain{
+  position:absolute; inset:0; z-index:45; pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  opacity:.07;
+}
+
+/* 左上：纸白卡片 + 靛蓝描边 + 硬阴影 */
+.menu-btn,.coins,.wlv{
+  background:var(--paper);
+  border:2px solid var(--ink);
+  border-radius:10px;
+  box-shadow:var(--shadow-hard);
+  color:var(--ink);
+}
+.menu-btn:active{ transform:translate(4px,4px); box-shadow:none; }
+.coins b,.wlv b{ font-family:var(--font-display); letter-spacing:.5px; }
+.menu-btn .dot{ background:var(--orange); box-shadow:0 0 0 3px var(--paper); }
+
+/* 顶部进度 */
+.track{ background:var(--paper); border:2px solid var(--ink); }
+.track > i{ background:linear-gradient(180deg,#fff100,#f0e000); }
+.track-label{
+  background:var(--paper); border:2px solid var(--ink);
+  box-shadow:4px 4px 0 rgba(7,10,125,.16);
+  font-family:var(--font-display); letter-spacing:1px;
+}
+.track-name{ color:var(--ink); opacity:.65; }
+
+/* 连击：白字 + 靛蓝描边 + 橙/蓝错位 */
+.combo-line b i,.combo-line .cl-label{ -webkit-text-stroke-color:var(--ink); }
+.combo-line b i::before{ color:var(--orange); }
+.combo-line b i::after{ color:#00a0e9; }
+
+/* 气泡 */
+.bubble{ background:var(--paper); border:2px solid var(--ink); box-shadow:6px 6px 0 rgba(7,10,125,.16); }
+
+/* 右下圆钮 */
+.round-btn{ background:var(--ink); color:var(--paper); border:2px solid var(--ink); box-shadow:4px 4px 0 rgba(7,10,125,.28); }
+.round-btn:hover{ background:#1a219c; }
+.round-btn:active{ transform:translate(3px,3px); box-shadow:none; }
+
+/* 开场 */
+.veil{ background:linear-gradient(160deg, rgba(189,239,255,.95) 0%, rgba(247,252,255,.97) 55%, rgba(189,239,255,.95) 100%); }
+.veil-card{ background:var(--paper); border:3px solid var(--ink); box-shadow:var(--shadow-card); }
+.veil-card h1{ font-family:var(--font-display); letter-spacing:10px; }
+.veil-card p{ color:rgba(7,10,125,.65); font-weight:700; }
+.start-btn{
+  background:var(--yellow); color:var(--ink);
+  border:3px solid var(--ink);
+  box-shadow:7px 8px 0 rgba(7,10,125,.2);
+  font-family:var(--font-display); letter-spacing:4px;
+}
+.start-btn:active{ transform:translate(5px,6px); box-shadow:2px 2px 0 rgba(7,10,125,.2); }
+
+/* 弹窗 / 商店 */
+.modal{ background:rgba(7,10,125,.42); }
+.modal-card{ background:var(--paper); border:3px solid var(--ink); box-shadow:var(--shadow-card); }
+.modal-head{ background:var(--yellow); border-bottom:3px solid var(--ink); }
+.modal-head b{ font-family:var(--font-display); color:var(--ink); letter-spacing:4px; }
+.modal-close{ background:var(--paper); border:2px solid var(--ink); color:var(--ink); }
+.modal-close:hover{ background:var(--yellow); }
+.shop-lv{ font-family:var(--font-display); }
+.buy-btn{
+  background:var(--yellow); color:var(--ink);
+  border:3px solid var(--ink);
+  box-shadow:7px 8px 0 rgba(7,10,125,.2);
+  font-family:var(--font-display); letter-spacing:3px;
+}
+.buy-btn:active:not(:disabled){ transform:translate(5px,6px); box-shadow:2px 2px 0 rgba(7,10,125,.2); }
+.shop-note,.shop-foot{ color:rgba(7,10,125,.55); }
+.ghost-btn{ background:rgba(7,10,125,.08); color:var(--ink); }
+.ghost-btn:hover{ background:var(--yellow); }
+.pips i{ background:rgba(7,10,125,.14); }
+.wlv i{ color:var(--orange); }
+</style>
+</head>
+<body>
+
+<div class="viewport">
+  <div class="screen" id="screen">
+    <div class="grain" aria-hidden="true"></div>
+
+    <!-- 场景 -->
+    <div class="world">
+      <div class="sky"></div>
+
+      <!-- 远景层：拱门 + 壁灯，84 秒循环横移 -->
+      <div class="bg-loop far">
+        <div class="bg-track">
+          <div class="bg-plane">
+            <div class="arches"><div class="arch"></div><div class="arch"></div><div class="arch"></div></div>
+            <div class="lamp l1"></div><div class="lamp l2"></div>
+            <div class="lamp l3"></div><div class="lamp l4"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 近景层：柱子 + 竖幡，52 秒循环横移（比远景快 → 视差） -->
+      <div class="bg-loop near">
+        <div class="bg-track">
+          <div class="bg-plane">
+            <div class="pillar left"></div>
+            <div class="pillar right"></div>
+            <div class="pillar mid-l"></div>
+            <div class="pillar mid-r"></div>
+            <div class="banner b1"></div>
+            <div class="banner b2"></div>
+            <div class="banner b3"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rail"></div>
+      <div class="floor"></div>
+      <div class="horizon"></div>
+      <div class="floor-vignette"></div>
+
+      <!-- 装饰 -->
+
+
+
+      <div class="pool p1"></div>
+      <div class="pool p2"></div>
+      <div class="pool p3"></div>
+
+      <div class="crate cr1"></div>
+      <div class="crate cr2"></div>
+
+      <div class="stone s1"></div><div class="stone s2"></div><div class="stone s3"></div>
+      <div class="stone s4"></div><div class="stone s5"></div>
+
+      <div class="dust u1"></div><div class="dust u2"></div><div class="dust u3"></div>
+      <div class="dust u4"></div><div class="dust u5"></div><div class="dust u6"></div>
+      <div class="dust u7"></div>
+
+      <div class="speedlines"></div>
+
+      <!-- 动态背景：飘过的云影 -->
+      <div class="cloud cl1"></div>
+      <div class="cloud cl2"></div>
+      <div class="cloud cl3"></div>
+
+</div>
+
+    <!-- 洞口 -->
+    <div class="field" id="field"></div>
+
+    <div class="neon"></div>
+<!-- 全屏打击特效层 -->
+    <div class="impact-layer" id="impactLayer"></div>
+
+    <!-- BONUS 时刻（史莱姆运行时挂到洞口里） -->
+    <div class="bonus-layer" id="bonusLayer">
+      <div class="bonus-vignette"></div>
+      <div class="bonus-title" id="bonusTitle" data-t="BONUS!">BONUS!</div>
+      <div class="bonus-timer" id="bonusTimer">3.0s</div>
+      <div class="bonus-tip">连打它！第 n 次得 n 金币（1 / 2 / 3 …）</div>
+      <div class="blocks" id="blocks"></div>
+    </div>
+    <!-- 左上：商店 / 转盘 / 金币 / 武器 -->
+    <div class="hud-left">
+      <button class="menu-btn" data-panel="shop"><i class="dot"></i><img src="assets/stall.png" alt=""><span>商店</span></button>
+      <button class="menu-btn" data-open="wheel.html"><img src="assets/pinwheel.png" alt=""><span>转盘</span></button>
+      <button class="menu-btn" data-open="slot.html">
+        <svg viewBox="0 0 40 40" aria-hidden="true">
+          <rect x="10" y="4" width="17" height="7" rx="3.5" fill="#ff7031" stroke="#070a7d" stroke-width="2.8"/>
+          <rect x="5" y="9" width="27" height="26" rx="6" fill="#f7fcff" stroke="#070a7d" stroke-width="2.8"/>
+          <rect x="9" y="16" width="5.6" height="9" rx="1.8" fill="#bdefff" stroke="#070a7d" stroke-width="2"/>
+          <rect x="16.2" y="16" width="5.6" height="9" rx="1.8" fill="#00a0e9" stroke="#070a7d" stroke-width="2"/>
+          <rect x="23.4" y="16" width="5.6" height="9" rx="1.8" fill="#fff100" stroke="#070a7d" stroke-width="2"/>
+          <rect x="15" y="28" width="7" height="3" rx="1.5" fill="#070a7d"/>
+        </svg>
+        <span>老虎机</span>
+      </button>
+      <div class="coins"><img src="assets/coin.png" alt=""><b id="uiCoins">0</b></div>
+      <div class="wlv"><span>武器 Lv.<b id="uiWlv">1</b></span><i id="uiMult">×1.00</i></div>
+    </div>
+
+    <!-- 顶部进度 -->
+    <div class="topbar">
+      <span class="track-name" id="trackName">木质宝箱</span>
+      <div class="track"><i id="barFill"></i></div>
+      <span class="track-label" id="trackCount">0 / 25</span>
+    </div>
+
+    <!-- 当前连击（进度条下方） -->
+    <div class="combo-line"><span class="cl-label">连击</span><b id="uiCombo"><i id="comboVal" data-t="0">0</i></b></div>
+    <!-- 右上气泡 -->
+    <div class="bubble" id="bubble">点冒头的史莱姆！<br>小心爆炸桶</div>
+
+    <!-- 右下按钮 -->
+    <div class="hud-right">
+      <button class="round-btn" id="soundBtn">音效</button>
+      <button class="round-btn" id="resetBtn">重开</button>
+    </div>
+
+    <!-- 开场 -->
+    <div class="veil" id="veil">
+      <div class="veil-card">
+        <h1>打地鼠</h1>
+        <p>敲爆史莱姆 · 攒金币开宝箱</p>
+        <button class="start-btn" id="startBtn">开始</button>
+      </div>
+    </div>
+
+    <!-- 弹窗 -->
+    <div class="modal" id="modal">
+      <div class="modal-card" id="modalCard">
+        <div class="modal-head">
+          <div class="mh-left">
+            <img id="modalIcon" src="assets/stall.png" alt="">
+            <b id="modalTitle">商店</b>
+          </div>
+          <button class="modal-close" id="modalClose">✕</button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+      </div>
+    </div>
+
+
+  </div>
+</div>
+
+<!-- 光标小锤：放在 .screen 外面，避免被 scale 影响定位 -->
+<div id="hammer" aria-hidden="true">
+  <div class="hm">
+    <svg viewBox="0 0 54 54" width="58" height="58">
+      <rect x="23" y="22" width="9" height="28" rx="4.5" fill="#1a219c" stroke="#070a7d" stroke-width="3"/>
+      <rect x="8" y="6" width="36" height="19" rx="7" fill="#fff100" stroke="#070a7d" stroke-width="3"/>
+      <rect x="13" y="11" width="12" height="6" rx="3" fill="#fffaf0"/>
+    </svg>
+  </div>
+</div>
+
+<div class="rotate-hint">
+  <div class="ico">📱</div>
+  <div>请横屏游玩</div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ==========================================================
+   0. 素材表（值 = 千星元件 imageId）
+   ========================================================== */
+const ASSETS = {
+  water:     { id:30002006, file:'assets/slime_water.png' },
+  ice:       { id:30002001, file:'assets/slime_ice.png' },
+  geo:       { id:30002008, file:'assets/slime_geo.png' },
+  fire:      { id:30002007, file:'assets/slime_fire.png' },
+  thunder:   { id:30002004, file:'assets/slime_thunder.png' },
+  bomb:      { id:20001599, file:'assets/bomb.png' },
+  coin:      { id:10005009, file:'assets/coin.png' },
+  chestWood: { id:10005008, file:'assets/chest_wood.png' },
+  chestGold: { id:10005006, file:'assets/chest_gold.png' },
+  stall:     { id:20001125, file:'assets/stall.png' },
+  pinwheel:  { id:10005010, file:'assets/pinwheel.png' },
+};
+
+/* ==========================================================
+   1. 数值（策划案 V1.0.1）
+   ========================================================== */
+const CFG = {
+  spawnGap: [820, 1180],
+  comboBreakOnMiss: true,
+};
+
+const TYPES = {
+  water: { art:'water', dur:[750, 900],  coins:[1, 3],  warn:0   },
+  ice:   { art:'ice',   dur:[600, 700],  coins:[4, 6],  warn:110 },
+  geo:   { art:'geo',   dur:[450, 600],  coins:[8, 12], warn:210 },
+  bomb:  { art:'bomb',  dur:[650, 750],  coins:[0, 0],  warn:70  },
+};
+
+const STAGES = [
+  { from:0,   maxAlive:1, durScale:1.00, w:{ water:86, ice:10, geo:2, bomb:2 } },
+  { from:20,  maxAlive:2, durScale:0.94, w:{ water:82, ice:11, geo:4, bomb:3 } },
+  { from:50,  maxAlive:2, durScale:0.88, w:{ water:78, ice:12, geo:5, bomb:5 } },
+  { from:100, maxAlive:2, durScale:0.82, w:{ water:74, ice:13, geo:7, bomb:6 } },
+];
+
+function comboMult(c){
+  if(c >= 30) return 1.20;
+  if(c >= 20) return 1.15;
+  if(c >= 10) return 1.10;
+  if(c >= 5)  return 1.05;
+  return 1.00;
+}
+
+const MILESTONES = [
+  { at:5,   bonus:5,   text:'连击 ×5' },
+  { at:10,  bonus:15,  text:'连击 ×10' },
+  { at:20,  bonus:40,  text:'连击 ×20' },
+  { at:30,  bonus:80,  text:'连击 ×30' },
+  { at:50,  bonus:200, text:'连击 ×50' },
+  { at:100, bonus:600, text:'连击 ×100' },
+];
+
+const CHESTS = [
+  { name:'木质宝箱', need:25,  reward:30,  art:'chestWood' },
+  { name:'精致宝箱', need:60,  reward:80,  art:'chestWood' },
+  { name:'珍贵宝箱', need:120, reward:180, art:'chestGold' },
+  { name:'华丽宝箱', need:250, reward:400, art:'chestGold' },
+  { name:'特殊宝箱', need:500, reward:900, art:'chestGold' },
+];
+
+/* 武器成长：5 级，每升一级收益翻一倍，只影响打地鼠金币收益。
+   费用按 ×4 递增 —— 收入翻倍、费用翻四倍，越往后越值得攒。 */
+const WEAPON = [
+  { mult:1,  cost:0     },   /* Lv1 */
+  { mult:2,  cost:120   },   /* Lv2 */
+  { mult:4,  cost:480   },   /* Lv3 */
+  { mult:8,  cost:1920  },   /* Lv4 */
+  { mult:16, cost:7680  },   /* Lv5 */
+];
+const WLV_MAX = WEAPON.length;
+
+/* 倍率显示：整数就不带小数 */
+function fmtMult(m){ return m % 1 === 0 ? ('×' + m) : ('×' + m.toFixed(2)); }
+
+
+/* ==========================================================
+   2. 状态
+   ========================================================== */
+const S = {
+  coins:0, combo:0, best:0, hits:0,
+  chestStage:0, chestReady:false,
+  running:false, muted:false,
+  wlv:1,                    /* 武器等级，跨局保留 */
+};
+
+/* 存档：三个页面共用一条记录（金币 / 武器 / 转盘 / 老虎机），
+   每边只写自己那几个字段，互不覆盖。千星侧换成玩家变量。 */
+const SAVE_KEY = 'dmsq.save.v1';
+function readSave(){
+  try{ return JSON.parse(localStorage.getItem(SAVE_KEY) || '{}') || {}; }catch(e){ return {}; }
+}
+function saveGame(){
+  try{
+    const d = readSave();
+    d.coins = S.coins;
+    d.wlv = S.wlv;
+    localStorage.setItem(SAVE_KEY, JSON.stringify(d));
+  }catch(e){}
+}
+function loadGame(){
+  const d = readSave();
+  if(Number.isFinite(d.coins)) S.coins = Math.max(0, Math.round(d.coins));
+  if(Number.isFinite(d.wlv))   S.wlv   = Math.min(WLV_MAX, Math.max(1, Math.round(d.wlv)));
+}
+
+let saveTimer = null;
+function saveGameSoon(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveGame, 400);
+}
+
+function weaponMult(){ return (WEAPON[S.wlv - 1] || WEAPON[0]).mult; }
+
+const holes  = Array.from({ length:9 }, () => ({ phase:'idle', type:null, until:0, token:0 }));
+const cells  = [];
+const slots  = [];
+
+/* ==========================================================
+   3. 适配
+   ========================================================== */
+const screenEl = document.getElementById('screen');
+let baseScale = 1;
+let camZoom = 0;          /* 镜头推近量，命中发光史莱姆时递增 */
+
+function fit(){
+  baseScale = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+  applyCam();
+}
+window.addEventListener('resize', fit);
+
+function applyCam(){
+  const k = baseScale * (1 + camZoom);
+  screenEl.style.transform = 'translate(-50%,-50%) scale(' + k + ')';
+  screenEl.style.setProperty('--k', k);
+}
+fit();
+
+/* ==========================================================
+   4. 建场
+   ========================================================== */
+
+/* 背景循环：每层复制一份同样的内容排到右边，轨道平移一屏后正好接上 */
+document.querySelectorAll('.bg-loop .bg-plane').forEach(plane => {
+  const clone = plane.cloneNode(true);
+  clone.setAttribute('aria-hidden', 'true');
+  plane.parentNode.appendChild(clone);
+});
+
+const fieldEl = document.getElementById('field');
+const ROWS = ['r1','r1','r1','r2','r2','r2','r3','r3','r3'];
+const COLS = ['c1','c2','c3','c1','c2','c3','c1','c2','c3'];
+
+for(let i = 0; i < 9; i++){
+  const cell = document.createElement('div');
+  cell.className = 'cell ' + ROWS[i] + ' ' + COLS[i];
+  cell.innerHTML =
+    '<div class="hole"></div>' +
+    '<div class="slot"><img alt=""></div>' +
+    '<div class="hole-front"></div>' +
+    '<div class="fx"></div>';
+  fieldEl.appendChild(cell);
+  cells.push(cell);
+  slots.push(cell.querySelector('.slot'));
+
+  cell.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    strike(i);
+  });
+}
+
+Object.values(ASSETS).forEach(a => { const img = new Image(); img.src = a.file; });
+
+
+/* ==========================================================
+   5. 音效
+   ========================================================== */
+let actx = null, master = null;
+function ac(){
+  if(!actx){
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if(!Ctx) return null;
+    actx = new Ctx();
+    /* 母线：压缩器把多层打击压紧，声音更"实"、更响又不爆 */
+    const comp = actx.createDynamicsCompressor();
+    comp.threshold.value = -18;
+    comp.knee.value = 10;
+    comp.ratio.value = 8;
+    comp.attack.value = .003;
+    comp.release.value = .16;
+    master = actx.createGain();
+    master.gain.value = 1.25;
+    master.connect(comp).connect(actx.destination);
+  }
+  if(actx.state === 'suspended') actx.resume();
+  return actx;
+}
+function tone(freq, dur, type, vol, slideTo, delay){
+  if(S.muted) return;
+  const ctx = ac(); if(!ctx) return;
+  const t0 = ctx.currentTime + (delay || 0);
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = type || 'square';
+  o.frequency.setValueAtTime(freq, t0);
+  if(slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(24, slideTo), t0 + dur);
+  g.gain.setValueAtTime(.0001, t0);
+  g.gain.exponentialRampToValueAtTime(vol || .05, t0 + .006);
+  g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
+  o.connect(g).connect(master);
+  o.start(t0); o.stop(t0 + dur + .03);
+}
+function noiseBurst(dur, vol, cutoff, delay, filterType){
+  if(S.muted) return;
+  const ctx = ac(); if(!ctx) return;
+  const t0 = ctx.currentTime + (delay || 0);
+  const n = Math.max(1, Math.floor(ctx.sampleRate * dur));
+  const buf = ctx.createBuffer(1, n, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for(let i = 0; i < n; i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/n, 2.2);
+  const src = ctx.createBufferSource(); src.buffer = buf;
+  const f = ctx.createBiquadFilter();
+  f.type = filterType || 'lowpass';
+  f.frequency.value = cutoff || 900;
+  f.Q.value = .9;
+  const g = ctx.createGain(); g.gain.value = vol || .08;
+  src.connect(f).connect(g).connect(master);
+  src.start(t0);
+}
+
+/* 连击音阶：击打按当前连击数取音高 */
+const SCALE_NOTE = [523, 587, 659, 698, 784, 880, 988, 1046];
+
+const SFX = {
+  pop: () => { tone(420, .07, 'sine', .06, 760); noiseBurst(.03, .04, 5200, 0, 'bandpass'); },
+
+  /* 打击：低频拳感 + 中频身体 + 高频爆点 + 破空 + 连击音阶 */
+  hit(type, combo){
+    const step = Math.min(SCALE_NOTE.length - 1, Math.max(0, combo - 1));
+    const note = SCALE_NOTE[step];
+    const punch = 1 + Math.min(.45, (combo || 1) * .012);   /* 连击越高越沉 */
+
+    tone(170 * punch, .2, 'sine', .26, 42);                 // 拳拳到肉
+    tone(96, .09, 'triangle', .12, 54);                     // 中频身体
+    noiseBurst(.05, .2, 5200, 0, 'bandpass');               // 爆点
+    noiseBurst(.1, .1, 900, 0, 'highpass');                 // 破空
+    tone(note, .1, 'square', .07, null, .012);              // 连击音阶
+    tone(note * 2, .07, 'sine', .04, null, .022);
+
+    if(type === 'ice'){
+      noiseBurst(.16, .09, 7000, 0, 'highpass');
+      tone(2093, .18, 'sine', .06, 3200, .02);
+      tone(1568, .12, 'triangle', .05, null, .06);
+    }
+    if(type === 'geo'){
+      tone(72, .22, 'sine', .16, 38, .02);
+      tone(note * 1.5, .12, 'triangle', .07, null, .07);
+      tone(note * 2, .16, 'triangle', .06, null, .15);
+      noiseBurst(.12, .1, 4200, .02, 'bandpass');
+    }
+    if(combo && combo % 5 === 0) tone(1568, .18, 'triangle', .055, null, .03);
+  },
+
+  coin: () => {
+    tone(1318, .07, 'square', .055);
+    tone(1760, .09, 'square', .05, null, .055);
+    noiseBurst(.04, .03, 7000, 0, 'bandpass');
+  },
+
+  bomb: () => {
+    tone(80, .55, 'sine', .3, 26);
+    noiseBurst(.5, .26, 1100);
+    noiseBurst(.16, .22, 5200, 0, 'bandpass');
+    noiseBurst(.4, .12, 420, .12);
+    tone(140, .2, 'sawtooth', .12, 40);
+    tone(48, .5, 'sine', .16, 24, .06);
+  },
+
+  whiff: () => { noiseBurst(.09, .06, 2400, 0, 'highpass'); tone(180, .06, 'sine', .04, 110); },
+
+  chest: () => {
+    tone(90, .22, 'sine', .18, 45);
+    noiseBurst(.08, .1, 5000, 0, 'bandpass');
+    [523,659,784,1046,1318,1568].forEach((f,i)=> tone(f,.18,'triangle',.075,null,i*.07));
+    [1046,1318,1568].forEach((f,i)=> tone(f,.12,'sine',.045,null,.42+i*.05));
+  },
+
+  mile: () => {
+    tone(160, .12, 'sine', .1, 60);
+    noiseBurst(.1, .09, 6000, 0, 'bandpass');
+    [784,988,1318,1568].forEach((f,i)=> tone(f,.11,'square',.07,null,i*.055));
+  },
+
+  ui: () => { tone(880, .04, 'square', .06, 700); noiseBurst(.025, .04, 6000, 0, 'bandpass'); },
+
+  bonus: () => {
+    noiseBurst(.5, .18, 1200, 0, 'highpass');               // 上升风声
+    [392,523,659,784,988,1318].forEach((f,i)=> tone(f,.12,'square',.07,null,i*.05));
+    tone(110, .3, 'sine', .18, 55, .28);                    // 落点重击
+    noiseBurst(.16, .16, 5000, .28, 'bandpass');
+  },
+
+  level: () => {
+    tone(90, .24, 'sine', .2, 45);
+    [523,659,784,1046,1318,1568,2093].forEach((f,i)=> tone(f,.14,'square',.075,null,i*.06));
+    noiseBurst(.14, .12, 6000, .05, 'bandpass');
+  },
+
+  win: () => {
+    [784,988,1318].forEach((f,i)=> tone(f,.12,'square',.07,null,i*.055));
+    tone(1568,.26,'triangle',.07,null,.2);
+    noiseBurst(.1,.08,6500,0,'bandpass');
+  },
+
+  lose: () => { tone(300,.18,'sawtooth',.06,170); tone(180,.3,'sine',.07,100,.12); },
+
+  reel: () => { tone(220,.1,'square',.07,70); noiseBurst(.05,.12,2600); noiseBurst(.02,.06,5200,0,'bandpass'); },
+
+  spin: () => {
+    let t = 0;
+    for(let i = 0; i < 22; i++){
+      t += 70 + 340 * Math.pow(i / 22, 2.6);                /* 逐渐放慢的咔哒声 */
+      setTimeout(() => { noiseBurst(.02, .05, 3800); tone(900, .02, 'square', .02); }, t);
+    }
+  },
+
+  bonusHit: (n) => {
+    const f = 620 * Math.pow(1.055, Math.min(n, 22));
+    tone(120, .16, 'sine', .2, 44);
+    noiseBurst(.07, .16, 5200, 0, 'bandpass');
+    noiseBurst(.12, .09, 1200, 0, 'highpass');
+    tone(f, .1, 'square', .08, f * 1.6);
+    if(n % 4 === 0) tone(f * 2, .18, 'triangle', .06, null, .05);
+  },
+
+  bonusEnd: () => {
+    [1046,880,698,523].forEach((f,i)=> tone(f,.16,'triangle',.07,null,i*.07));
+    tone(80,.4,'sine',.2,32,.1);
+    noiseBurst(.3,.14,900,.1);
+  },
+};
+
+/* ==========================================================
+   6. UI
+   ========================================================== */
+const $ = (id) => document.getElementById(id);
+const el = {
+  coins:$('uiCoins'), combo:$('uiCombo'), trackName:$('trackName'), trackCount:$('trackCount'),
+  barFill:$('barFill'), bubble:$('bubble'),
+  startBtn:$('startBtn'), veil:$('veil'), soundBtn:$('soundBtn'), resetBtn:$('resetBtn'),
+  modal:$('modal'), modalCard:$('modalCard'), modalTitle:$('modalTitle'), modalIcon:$('modalIcon'),
+  modalBody:$('modalBody'), modalClose:$('modalClose'),
+  hammer:$('hammer'),
+};
+
+let bubbleTimer = null;
+function say(text, ms){
+  el.bubble.innerHTML = text;
+  el.bubble.classList.remove('hide');
+  clearTimeout(bubbleTimer);
+  if(ms) bubbleTimer = setTimeout(() => el.bubble.classList.add('hide'), ms);
+}
+
+function bump(node){
+  node.style.transform = 'scale(1.35)';
+  setTimeout(() => { node.style.transform = ''; }, 160);
+}
+
+let lastComboShown = -1;
+let comboBreath = 1.07;          /* 呼吸幅度：基础 1.07，打击后临时拉高 */
+const COMBO_BREATH_BASE = 1.07;
+
+function renderStats(){
+  el.coins.textContent = S.coins;
+  renderWeapon();
+  saveGameSoon();
+
+  /* 连击数：显示在宝箱进度条下方 */
+  const val = document.getElementById('comboVal');
+  if(val && S.combo !== lastComboShown){
+    val.textContent = S.combo;
+    val.setAttribute('data-t', S.combo);
+    if(S.combo > lastComboShown && S.combo > 0){
+      /* 打击：连击越高，呼吸幅度拉得越大 */
+      comboBreath = Math.min(1.5, 1.18 + S.combo * 0.022);
+      document.documentElement.style.setProperty('--breath', comboBreath.toFixed(3));
+
+      el.combo.classList.remove('pop');
+      void el.combo.offsetWidth;
+      el.combo.classList.add('pop');
+      setTimeout(() => el.combo.classList.remove('pop'), 300);
+    }
+    lastComboShown = S.combo;
+  }
+
+  const e = Math.min(1, S.combo / 18);
+  document.documentElement.style.setProperty('--energy', e.toFixed(2));
+}
+
+function renderChest(){
+  const chest = CHESTS[S.chestStage];
+
+  if(!chest){
+    el.trackName.textContent = '全部领完';
+    el.trackCount.textContent = '★';
+    el.barFill.style.width = '100%';
+    return;
+  }
+
+  const prev = S.chestStage > 0 ? CHESTS[S.chestStage - 1].need : 0;
+  const cur = chest.need;
+  const ratio = Math.max(0, Math.min(1, (S.hits - prev) / (cur - prev)));
+
+  el.trackName.textContent = chest.name;
+  el.trackCount.textContent = Math.min(S.hits, cur) + ' / ' + cur;
+  el.barFill.style.width = (ratio * 100) + '%';
+}
+
+/* 武器等级徽章 + 商店红点 */
+const shopMenuBtn = document.querySelector('.menu-btn[data-panel="shop"]');
+function renderWeapon(){
+  const lvEl = $('uiWlv'), multEl = $('uiMult');
+  if(lvEl)   lvEl.textContent = S.wlv;
+  if(multEl) multEl.textContent = fmtMult(weaponMult());
+  const next = WEAPON[S.wlv];
+  if(shopMenuBtn) shopMenuBtn.classList.toggle('can-up', !!next && S.coins >= next.cost);
+}
+
+/* ==========================================================
+   7. 刷新
+   ========================================================== */
+const rand = (a, b) => a + Math.random() * (b - a);
+const randInt = (a, b) => Math.floor(rand(a, b + 1));
+
+function pickType(weights){
+  const total = Object.values(weights).reduce((a, b) => a + b, 0);
+  let r = Math.random() * total;
+  for(const k in weights){
+    r -= weights[k];
+    if(r <= 0) return k;
+  }
+  return 'water';
+}
+
+function aliveCount(){
+  let n = 0;
+  holes.forEach(h => { if(h.phase !== 'idle') n++; });
+  return n;
+}
+
+function trySpawn(){
+  if(BONUS.active) return;
+  const st = STAGES[0];
+  let cur = st;
+  for(const s of STAGES){ if(S.hits >= s.from) cur = s; }
+  if(aliveCount() >= cur.maxAlive) return;
+
+  const free = [];
+  holes.forEach((h, i) => { if(h.phase === 'idle') free.push(i); });
+  if(!free.length) return;
+
+  const i = free[Math.floor(Math.random() * free.length)];
+  const type = pickType(cur.w);
+  const def = TYPES[type];
+  startMole(i, type, rand(def.dur[0], def.dur[1]) * cur.durScale);
+}
+
+function startMole(i, type, dur){
+  const h = holes[i];
+  const cell = cells[i];
+  const slot = slots[i];
+  const def = TYPES[type];
+
+  h.phase = 'warn';
+  h.type = type;
+
+  if(def.warn > 0){
+    cell.classList.add('warn');
+    setTimeout(() => cell.classList.remove('warn'), def.warn);
+  }
+
+  setTimeout(() => {
+    if(!S.running || h.phase !== 'warn') return;
+    cell.classList.remove('warn');
+
+    h.phase = 'up';
+    h.until = performance.now() + dur;
+    h.token++;
+
+    slot.querySelector('img').src = ASSETS[def.art].file;
+    void slot.offsetWidth;
+    slot.classList.add('up');
+
+    if(type === 'geo') SFX.pop();
+  }, def.warn);
+}
+
+function hideMole(i, instant){
+  const h = holes[i];
+  const slot = slots[i];
+  const token = ++h.token;
+
+  h.phase = 'idle';
+  h.type = null;
+  slot.classList.remove('up');
+
+  setTimeout(() => {
+    if(h.token !== token) return;
+    slot.querySelector('img').removeAttribute('src');
+  }, instant ? 0 : 190);
+}
+
+function expireMole(i){
+  const wasBomb = holes[i].type === 'bomb';
+  hideMole(i);
+  if(wasBomb) return;                 /* 炸弹自己跑掉 = 成功规避 */
+  if(CFG.comboBreakOnMiss) breakCombo();
+}
+
+/* ==========================================================
+   8. 结算
+   ========================================================== */
+function breakCombo(){
+  if(S.combo > 0){ S.combo = 0; }
+}
+
+function num(i, text, cls){
+  const fx = cells[i].querySelector('.fx');
+  const node = document.createElement('div');
+  node.className = 'num ' + (cls || '');
+  node.textContent = text;
+  fx.appendChild(node);
+  setTimeout(() => node.remove(), 800);
+}
+
+function coinPop(i){
+  const fx = cells[i].querySelector('.fx');
+  const node = document.createElement('img');
+  node.className = 'coin-pop';
+  node.src = ASSETS.coin.file;
+  fx.appendChild(node);
+  setTimeout(() => node.remove(), 900);
+}
+
+/* ---- 打击特效 ---- */
+const COLORS = ['#ff4d6d', '#ffb703', '#33c9f0', '#9b5de5', '#f15bb5', '#ffd166'];
+
+/* 放射状彩色速度线 */
+function slash(i, palette){
+  const fx = cells[i].querySelector('.fx');
+  const n = 7;
+  for(let k = 0; k < n; k++){
+    const s = document.createElement('i');
+    s.className = 'slash';
+    s.style.setProperty('--a', (k * (360 / n) + rand(-13, 13)).toFixed(1) + 'deg');
+    s.style.setProperty('--c', (palette || COLORS)[k % (palette || COLORS).length]);
+    s.style.setProperty('--len', rand(76, 124).toFixed(0) + 'px');
+    fx.appendChild(s);
+    setTimeout(() => s.remove(), 500);
+  }
+}
+
+/* 溅射粒子 */
+function sparks(i, palette){
+  const fx = cells[i].querySelector('.fx');
+  for(let k = 0; k < 6; k++){
+    const s = document.createElement('i');
+    s.className = 'spark';
+    const ang = rand(0, Math.PI * 2), dist = rand(40, 88);
+    s.style.setProperty('--dx', (Math.cos(ang) * dist).toFixed(1) + 'px');
+    s.style.setProperty('--dy', (Math.sin(ang) * dist - 34).toFixed(1) + 'px');
+    s.style.setProperty('--c', (palette || COLORS)[k % (palette || COLORS).length]);
+    fx.appendChild(s);
+    setTimeout(() => s.remove(), 620);
+  }
+}
+
+/* 涂鸦字：黑白粗描边 + 品红/青错位 */
+const WORDS = {
+  water: ['咚', '砰', '嘭', '嘿', '啪'],
+  ice:   ['咔', '唰', '叮', '冰'],
+  geo:   ['轰', '金', '崩', '暴'],
+  bomb:  ['砰！', '炸', 'BOOM'],
+};
+
+function graffiti(i, type){
+  const fx = cells[i].querySelector('.fx');
+  const pool = WORDS[type] || WORDS.water;
+  const t = pool[Math.floor(Math.random() * pool.length)];
+
+  const node = document.createElement('div');
+  node.className = 'graffiti' + (type === 'bomb' ? ' bad' : '');
+  node.setAttribute('data-t', t);
+  node.textContent = t;
+  node.style.setProperty('--rot', rand(-11, 11).toFixed(1) + 'deg');
+  fx.appendChild(node);
+  setTimeout(() => node.remove(), 820);
+}
+
+/* 连击大字（画面中央） */
+function comboBig(text){
+  const node = document.createElement('div');
+  node.className = 'combo-big';
+  node.setAttribute('data-t', text);
+  node.textContent = text;
+  screenEl.appendChild(node);
+  setTimeout(() => node.remove(), 980);
+}
+
+function strike(i){
+  if(!S.running || BONUS.active) return;
+  swingHammer();
+
+  const h = holes[i];
+  if(h.phase === 'warn') return;
+
+  if(h.phase !== 'up'){
+    SFX.whiff();
+    if(CFG.comboBreakOnMiss && performance.now() > BONUS.graceUntil) breakCombo();
+    return;
+  }
+
+  const type = h.type;
+
+  if(type === 'bomb'){
+    SFX.bomb();
+    num(i, '连击中断', 'bad');
+    slash(i, ['#ff5f5f', '#ff9d5c', '#ffd166']);
+    sparks(i, ['#ff5f5f', '#ff7031', '#070a7d']);
+    graffiti(i, 'bomb');
+    S.combo = 0;
+    hideMole(i, true);
+    say('砰！爆炸桶不能敲', 1800);
+
+    screenEl.classList.remove('shake');
+    void screenEl.offsetWidth;
+    screenEl.classList.add('shake');
+    return;
+  }
+
+  const def = TYPES[type];
+  /* 最终金币 = 地鼠基础价值 × 武器收益倍率 × 连击倍率（策划案 §4.3） */
+  const gain = Math.max(1, Math.round(randInt(def.coins[0], def.coins[1]) * comboMult(S.combo + 1) * weaponMult()));
+
+  S.combo++;
+  if(S.combo > S.best) S.best = S.combo;
+
+  S.coins += gain;
+  S.hits++;
+  bump(el.coins);
+
+  flingSlime(i, type);
+  hideMole(i, true);
+  cells[i].classList.add('hit');
+  setTimeout(() => cells[i].classList.remove('hit'), 330);
+
+  num(i, '+' + gain, type === 'geo' ? 'gold' : type === 'ice' ? 'ice' : '');
+  coinPop(i);
+  impact(i, type === 'geo' ? 2 : 1);
+
+  slash(i, type === 'ice' ? ['#d6f2ff', '#9ec6ff', '#7ee0c8', '#ffffff'] : null);
+  sparks(i, type === 'geo' ? ['#ffd166', '#fff100', '#ffb26b'] : null);
+  graffiti(i, type);
+
+  SFX.hit(type, S.combo);
+  if(type === 'ice' || type === 'geo') setTimeout(() => SFX.coin(), 45);
+
+  checkMilestones();
+  checkChest();
+  maybeBonus();
+  renderStats();
+  renderChest();
+}
+
+function checkMilestones(){
+  for(const m of MILESTONES){
+    if(S.combo === m.at){
+      S.coins += m.bonus;
+      SFX.mile();
+      comboBig('COMBO ×' + S.combo);
+      say(m.text + '！+' + m.bonus + ' 金币', 1600);
+      break;
+    }
+  }
+}
+
+function checkChest(){
+  const chest = CHESTS[S.chestStage];
+  if(!chest || S.chestReady) return;
+  if(S.hits >= chest.need){
+    S.chestReady = true;
+    S.chestStage++;
+    S.coins += chest.reward;
+    SFX.chest();
+    num(4, '+' + chest.reward, 'gold');
+    say('获得「' + chest.name + '」+' + chest.reward + ' 金币', 2200);
+    renderChest();
+    renderStats();
+  }
+}
+
+/* ==========================================================
+   8.5 BONUS 时刻：金光史莱姆从洞里钻出
+   ----------------------------------------------------------
+   每命中 10 次：隐藏 UI，随机一个洞口冒出金光史莱姆，
+   存活 3 秒。每打一次给「当前累计命中数」金币，镜头往前推；
+   停手约 0.36 秒后镜头自己退回去。
+   ========================================================== */
+const BONUS = {
+  life: 3000,
+  active: false,
+  endAt: 0,
+  lastHitAt: 0,
+  count: 0,
+  needHits: 10,
+  reward: 0,
+  cellIndex: -1,
+  el: null,
+  nextAt: 0,       /* 下一次触发的累计命中数 */
+  graceUntil: 0,   /* 结束后的连击宽限期 */
+};
+
+/* BONUS 史莱姆随机挑一种 */
+const BONUS_ARTS = ['water', 'ice', 'geo', 'fire', 'thunder'];
+
+const bonusEl    = $('bonusLayer');
+const bonusTimer = $('bonusTimer');
+const blocksEl   = $('blocks');
+const impactEl   = $('impactLayer');
+
+/* 三个洞口的屏幕百分比坐标（用于全屏特效定位） */
+const CELL_POS = [
+  [29.2, 53.6], [50.0, 53.6], [70.8, 53.6],
+  [29.2, 69.6], [50.0, 69.6], [70.8, 69.6],
+  [29.2, 85.6], [50.0, 85.6], [70.8, 85.6],
+];
+
+/* Muse Dash 风糖果色（高饱和 + 黑描边） */
+const MD_COLORS = ['#ff2e88', '#ffd23f', '#2ee6f6', '#8b5cf6', '#ff7a3d', '#ffffff', '#4ade80', '#ff5aa0'];
+const VG_PALETTES = [MD_COLORS];
+
+/* 可复现的随机数发生器 */
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function maybeBonus(){
+  if(BONUS.active) return;
+  if(S.hits >= BONUS.nextAt) startBonus();
+}
+
+function startBonus(){
+  BONUS.active = true;
+  BONUS.count = 0;
+  BONUS.reward = S.hits;
+  BONUS.endAt = performance.now() + BONUS.life;
+  BONUS.lastHitAt = 0;
+
+  /* 优先挑一个正冒头的洞 */
+  let idx = -1;
+  for(let i = 0; i < 9; i++){ if(holes[i].phase === 'up'){ idx = i; break; } }
+  if(idx < 0) idx = 4;
+  BONUS.cellIndex = idx;
+
+  for(let i = 0; i < 9; i++){
+    if(i !== idx && holes[i].phase !== 'idle') hideMole(i, true);
+  }
+
+  const cell = cells[idx];
+  const h = holes[idx];
+  h.phase = 'bonus';
+  h.type = 'bonus';
+  h.token++;
+  cell.classList.add('bonus-hole');
+
+  /* 随机挑一种史莱姆 */
+  const art = BONUS_ARTS[Math.floor(Math.random() * BONUS_ARTS.length)];
+  BONUS.needHits = randInt(9, 11);       /* 打这么多次就爆炸 */
+
+  const node = document.createElement('div');
+  node.className = 'bonus-slime';
+  node.innerHTML =
+    '<div class="bs-inner">' +
+      '<div class="bonus-ring"></div>' +
+      '<div class="bonus-halo"></div>' +
+      '<img src="' + ASSETS[art].file + '" alt="">' +
+    '</div>';
+  cell.appendChild(node);
+  BONUS.el = node;
+
+  /* 排下一次的间隔：7~15 次命中 */
+  BONUS.nextAt = S.hits + randInt(7, 15);
+
+  node.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    hitBonus();
+  });
+
+  screenEl.classList.add('bonus');
+  bonusEl.classList.add('on');
+  bonusTimer.textContent = (BONUS.life / 1000).toFixed(1) + 's';
+
+  SFX.bonus();
+  impact(idx, 2);
+}
+
+function endBonus(){
+  if(!BONUS.active) return;
+  BONUS.active = false;
+
+  screenEl.classList.remove('bonus');
+  bonusEl.classList.remove('on');
+
+  const idx = BONUS.cellIndex;
+  if(idx >= 0){
+    cells[idx].classList.remove('bonus-hole');
+    holes[idx].phase = 'idle';
+    holes[idx].type = null;
+    holes[idx].token++;
+  }
+  if(BONUS.el){ BONUS.el.remove(); BONUS.el = null; }
+
+  BONUS.cellIndex = -1;
+  BONUS.lastHitAt = performance.now();
+
+  /* 结束后 0.7 秒内点空不断连击，并尽快补一只地鼠 */
+  BONUS.graceUntil = performance.now() + 700;
+  nextSpawnAt = performance.now() + 180;
+
+  SFX.bonusEnd();
+}
+
+function hitBonus(){
+  if(!BONUS.active) return;
+
+  BONUS.count++;
+  const gain = BONUS.count;           /* 第 n 次得 n 金币：1 / 2 / 3 … */
+  S.coins += gain;
+  bump(el.coins);
+  renderStats();
+
+  BONUS.lastHitAt = performance.now();
+  camZoom = Math.min(0.52, camZoom + 0.05);
+  applyCam();
+
+  bonusNum(gain);
+  impact(BONUS.cellIndex, 1);
+  SFX.bonusHit(BONUS.count);
+
+  screenEl.classList.remove('shake');
+  void screenEl.offsetWidth;
+  screenEl.classList.add('shake');
+
+  /* 史莱姆被打中：放大弹一下 */
+  const inner = BONUS.el && BONUS.el.querySelector('.bs-inner');
+  if(inner){
+    inner.classList.remove('punch');
+    void inner.offsetWidth;
+    inner.classList.add('punch');
+  }
+
+  /* 打够了就炸，冲向镜头 */
+  if(BONUS.count >= BONUS.needHits) setTimeout(boomBonus, 60);
+}
+
+/* 爆炸：史莱姆朝镜头飞过来 */
+function boomBonus(){
+  if(!BONUS.active || !BONUS.el) return;
+  const idx = BONUS.cellIndex;
+
+  BONUS.el.classList.add('boom');
+  impact(idx, 3);
+
+  screenEl.classList.remove('shake');
+  void screenEl.offsetWidth;
+  screenEl.classList.add('shake');
+
+  screenEl.classList.add('boom-flash');
+  setTimeout(() => screenEl.classList.remove('boom-flash'), 260);
+
+  SFX.bomb();
+  setTimeout(() => SFX.bonusEnd(), 120);
+
+  setTimeout(() => endBonus(), 420);
+}
+
+function bonusNum(gain){
+  const [cx, cy] = CELL_POS[BONUS.cellIndex] || [50, 55];
+  const node = document.createElement('div');
+  node.className = 'bonus-num';
+  node.textContent = '+' + gain;
+  node.style.left = (cx + (Math.random() * 16 - 8)) + '%';
+  node.style.top = (cy - 26) + '%';
+  blocksEl.appendChild(node);
+  setTimeout(() => node.remove(), 900);
+}
+
+/* ---------------- 打击特效：命中点附近爆散（Muse Dash 风） ---------------- */
+function impact(idx, power){
+  const seed = ((Date.now() & 0xffffffff) ^ (Math.random() * 0xffffffff)) >>> 0;
+  const R = mulberry32(seed);
+  const pick = (arr) => arr[Math.floor(R() * arr.length)];
+
+  const pos = CELL_POS[idx] || [50, 55];
+  const px = pos[0] / 100 * 1280;
+  const py = pos[1] / 100 * 720;
+
+  /* 1) 命中点白色爆点 */
+  const burst = document.createElement('i');
+  burst.className = 'hit-burst';
+  burst.style.left = px + 'px';
+  burst.style.top  = py + 'px';
+  burst.style.setProperty('--c', pick(MD_COLORS));
+  burst.style.setProperty('--w', (70 + R() * 70).toFixed(0) + 'px');
+  impactEl.appendChild(burst);
+  setTimeout(() => burst.remove(), 300);
+
+  /* 2) 冲击圆环：小范围，1~2 圈 */
+  const rings = 1 + Math.floor(R() * 2);
+  for(let k = 0; k < rings; k++){
+    const ring = document.createElement('i');
+    ring.className = 'ring-pop';
+    ring.style.left = (px + (R() * 30 - 15)) + 'px';
+    ring.style.top  = (py + (R() * 30 - 15)) + 'px';
+    ring.style.setProperty('--w', (80 + R() * 70).toFixed(0) + 'px');
+    ring.style.setProperty('--c', pick(MD_COLORS));
+    ring.style.setProperty('--bw', (7 + Math.floor(R() * 5)) + 'px');
+    ring.style.animationDelay = (k * 55) + 'ms';
+    impactEl.appendChild(ring);
+    setTimeout(() => ring.remove(), 460);
+  }
+
+  /* 3) 爆散色块：只在命中点周围 70~230px 内炸开 */
+  const n = (power >= 2 ? 16 : 11) + Math.floor(R() * 5);
+  for(let k = 0; k < n; k++){
+    const b = document.createElement('i');
+    b.className = 'pop-block';
+    const ang = R() * Math.PI * 2;
+    const dist = 90 + R() * 190;
+    const sz = 24 + R() * 58;
+    b.style.left = (px + (R() * 12 - 6)) + 'px';
+    b.style.top  = (py + (R() * 12 - 6)) + 'px';
+    b.style.setProperty('--dx', (Math.cos(ang) * dist).toFixed(0) + 'px');
+    b.style.setProperty('--dy', (Math.sin(ang) * dist - 20).toFixed(0) + 'px');
+    b.style.setProperty('--w', sz.toFixed(0) + 'px');
+    b.style.setProperty('--h', (R() < 0.35 ? sz * 0.45 : sz).toFixed(0) + 'px');
+    b.style.setProperty('--c', pick(MD_COLORS));
+    b.style.setProperty('--rot', (R() * 460 - 230).toFixed(0) + 'deg');
+    b.style.setProperty('--r', R() < 0.4 ? '50%' : '3px');
+    b.style.setProperty('--t', (0.34 + R() * 0.16).toFixed(2) + 's');
+    impactEl.appendChild(b);
+    setTimeout(() => b.remove(), 540);
+  }
+
+  /* 4) 四角星闪光：2~4 颗 */
+  const stars = 2 + Math.floor(R() * 3);
+  for(let k = 0; k < stars; k++){
+    const s = document.createElement('i');
+    s.className = 'star-pop';
+    const ang = R() * Math.PI * 2;
+    const dist = 40 + R() * 110;
+    s.style.left = (px + Math.cos(ang) * dist) + 'px';
+    s.style.top  = (py + Math.sin(ang) * dist) + 'px';
+    s.style.setProperty('--w', (18 + R() * 26).toFixed(0) + 'px');
+    s.style.setProperty('--c', R() < 0.5 ? '#ffffff' : pick(MD_COLORS));
+    s.style.animationDelay = (R() * 80).toFixed(0) + 'ms';
+    impactEl.appendChild(s);
+    setTimeout(() => s.remove(), 460);
+  }
+}
+
+/* 史莱姆被打飞：复制一份贴图，旋转着飞出屏幕 */
+function flingSlime(i, type){
+  const art = TYPES[type] && TYPES[type].art;
+  if(!art) return;
+  const cell = cells[i];
+  const img = document.createElement('img');
+  img.className = 'fling';
+  img.src = ASSETS[art].file;
+  img.alt = '';
+
+  const ang = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.1;   /* 以向上为主 */
+  const dist = 520 + Math.random() * 420;
+  img.style.setProperty('--dx', (Math.cos(ang) * dist).toFixed(0) + 'px');
+  img.style.setProperty('--dy', (Math.sin(ang) * dist).toFixed(0) + 'px');
+  img.style.setProperty('--rot', ((Math.random() < 0.5 ? -1 : 1) * (260 + Math.random() * 420)).toFixed(0) + 'deg');
+
+  cell.appendChild(img);
+  setTimeout(() => img.remove(), 720);
+}
+
+/* hex → rgba */
+function hexA(hex, a){
+  const n = parseInt(hex.slice(1), 16);
+  return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+}
+function blockBurst(){ /* 保留接口：现在统一走 impact() */ }
+/* ==========================================================
+   9. 循环
+   ========================================================== */
+let rafId = null;
+let nextSpawnAt = 0;
+
+function loop(){
+  if(!S.running) return;
+  const now = performance.now();
+
+  for(let i = 0; i < 9; i++){
+    const h = holes[i];
+    if(h.phase === 'up' && now >= h.until) expireMole(i);
+  }
+
+  if(now >= nextSpawnAt){
+    trySpawn();
+    nextSpawnAt = now + rand(CFG.spawnGap[0], CFG.spawnGap[1]);
+  }
+
+  /* BONUS 倒计时 */
+  if(BONUS.active){
+    const left = BONUS.endAt - now;
+    bonusTimer.textContent = Math.max(0, left / 1000).toFixed(1) + 's';
+    if(left <= 0) endBonus();
+  }
+
+  /* 连击呼吸幅度自然回落到基础值 */
+  if(comboBreath > COMBO_BREATH_BASE + 0.002){
+    comboBreath = COMBO_BREATH_BASE + (comboBreath - COMBO_BREATH_BASE) * 0.965;
+    document.documentElement.style.setProperty('--breath', comboBreath.toFixed(3));
+  }
+
+  /* 停手后镜头慢慢退回 */
+  if(!BONUS.active || now - BONUS.lastHitAt > 360){
+    if(camZoom > 0.002){ camZoom *= 0.955; applyCam(); }
+    else if(camZoom !== 0){ camZoom = 0; applyCam(); }
+  }
+
+  rafId = requestAnimationFrame(loop);
+}
+
+function resetGame(){
+  if(BONUS.active){
+    BONUS.active = false;
+    screenEl.classList.remove('bonus');
+    bonusEl.classList.remove('on');
+  }
+  camZoom = 0;
+  applyCam();
+
+  S.running = false;
+  S.combo = 0; S.best = 0; S.hits = 0;
+  S.chestStage = 0; S.chestReady = false;
+  /* 注意：金币、武器等级、转盘战绩跨局保留，不在这里清零 */
+
+  if(rafId) cancelAnimationFrame(rafId);
+  rafId = null;
+
+  for(let i = 0; i < 9; i++){
+    const h = holes[i];
+    h.phase = 'idle'; h.type = null; h.token++;
+    slots[i].classList.remove('up');
+    slots[i].querySelector('img').removeAttribute('src');
+    cells[i].classList.remove('warn', 'hit');
+    cells[i].querySelector('.fx').innerHTML = '';
+  }
+
+  renderStats();
+  renderChest();
+}
+
+function startGame(){
+  resetGame();
+  S.running = true;
+  el.veil.classList.add('hide');
+  say('点冒头的史莱姆！小心爆炸桶', 2600);
+  nextSpawnAt = performance.now() + 450;
+  if(rafId) cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(loop);
+}
+
+/* ==========================================================
+   10. 商店 / 转盘
+   ========================================================== */
+const PANELS = {
+  shop: { title:'商 店', icon:'stall', cls:'shop' },
+};
+
+function openPanel(key){
+  const p = PANELS[key];
+  if(!p) return;
+  el.modalTitle.textContent = p.title;
+  el.modalIcon.style.display = '';
+  el.modalIcon.src = ASSETS[p.icon].file;
+  el.modalCard.className = 'modal-card ' + p.cls;
+  buildShop();
+  el.modal.classList.add('open');
+  document.body.classList.add('modal-open');
+  SFX.ui();
+}
+
+/* 转盘 / 老虎机是独立页面：单独开一个窗口，主场景不卸载 */
+function openGame(page){
+  const name = 'dmsq-' + page.replace('.html', '');
+  const w = Math.min(1360, Math.round((window.screen.availWidth || 1280) * 0.92));
+  const h = Math.min(820, Math.round((window.screen.availHeight || 800) * 0.92));
+  const win = window.open(page, name,
+    'width=' + w + ',height=' + h + ',menubar=no,toolbar=no,location=no,status=no');
+  if(win) win.focus();
+  else say('窗口被浏览器拦了，允许一下弹窗', 2600);
+}
+function closePanel(){
+  el.modal.classList.remove('open');
+  document.body.classList.remove('modal-open');
+}
+
+/* ---------- 商店：武器升级 ---------- */
+function buildShop(){
+  const lv = S.wlv, cur = WEAPON[lv - 1], next = WEAPON[lv];
+  const afford = !!next && S.coins >= next.cost;
+
+  let pips = '';
+  for(let i = 0; i < WLV_MAX; i++){
+    pips += '<i class="' + (i < lv ? 'on ' : '') + (i === lv - 1 ? 'now' : '') + '"></i>';
+  }
+
+  el.modalBody.innerHTML =
+    '<div class="shop-wrap">' +
+      '<div class="shop-hero">' +
+        '<img src="' + ASSETS.stall.file + '" alt="">' +
+        '<div class="shop-info">' +
+          '<div class="shop-lv">Lv.<b>' + lv + '</b><small>武器等级</small></div>' +
+          '<div class="shop-mult">当前收益 <b>' + fmtMult(cur.mult) + '</b>' +
+            (next ? '　→　下一级 <b>' + fmtMult(next.mult) + '</b>' : '　已达上限') +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="pips">' + pips + '</div>' +
+      '<button class="buy-btn' + (next ? '' : ' done') + '" id="buyBtn"' + (afford ? '' : ' disabled') + '>' +
+        (next ? '升 级　<b>' + next.cost + '</b>' : '武器已满级') +
+      '</button>' +
+      '<div class="shop-foot">' +
+        '<span>金币 <b>' + S.coins + '</b>' +
+          (next && !afford ? '　还差 ' + (next.cost - S.coins) : '') + '</span>' +
+        '<span>下一级 <b>' + (next ? fmtMult(next.mult) : '已满级') + '</b></span>' +
+      '</div>' +
+    '</div>';
+
+  $('buyBtn').addEventListener('click', buyWeapon);
+}
+
+function buyWeapon(){
+  const next = WEAPON[S.wlv];
+  if(!next || S.coins < next.cost) return;
+
+  S.coins -= next.cost;
+  S.wlv++;
+  SFX.level();
+  saveGame();
+  renderStats();
+  buildShop();
+
+  el.modalCard.classList.remove('lvup');
+  void el.modalCard.offsetWidth;
+  el.modalCard.classList.add('lvup');
+  setTimeout(() => el.modalCard.classList.remove('lvup'), 470);
+}
+
+document.querySelectorAll('.menu-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if(btn.dataset.open) openGame(btn.dataset.open);
+    else openPanel(btn.dataset.panel);
+  });
+});
+el.modalClose.addEventListener('click', closePanel);
+el.modal.addEventListener('click', (e) => { if(e.target === el.modal) closePanel(); });
+document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closePanel(); });
+window.addEventListener('beforeunload', saveGame);
+document.addEventListener('visibilitychange', () => {
+  if(document.hidden) saveGame();
+  else syncCoinsFromSave();
+});
+
+/* 转盘 / 老虎机在另一个窗口里花掉金币后，回到主场景要同步余额 */
+function syncCoinsFromSave(){
+  const d = readSave();
+  if(!Number.isFinite(d.coins)) return;
+  const c = Math.max(0, Math.round(d.coins));
+  if(c !== S.coins){ S.coins = c; renderStats(); }
+}
+window.addEventListener('focus', syncCoinsFromSave);
+
+/* ==========================================================
+   11. 交互
+   ========================================================== */
+el.startBtn.addEventListener('click', startGame);
+el.resetBtn.addEventListener('click', () => { resetGame(); startGame(); });
+
+el.soundBtn.addEventListener('click', () => {
+  S.muted = !S.muted;
+  el.soundBtn.textContent = S.muted ? '静音' : '音效';
+  if(!S.muted) SFX.coin();
+});
+
+/* 小锤在 .screen 外，直接用视口坐标，热点对准锤头中心 */
+let hammerX = -300, hammerY = -300;
+document.addEventListener('pointermove', (e) => {
+  hammerX = e.clientX; hammerY = e.clientY;
+  el.hammer.style.transform = 'translate(' + (hammerX - 26) + 'px,' + (hammerY - 15) + 'px)';
+}, { passive:true });
+
+function swingHammer(){
+  el.hammer.classList.add('hit');
+  setTimeout(() => el.hammer.classList.remove('hit'), 110);
+}
+document.addEventListener('pointerdown', swingHammer);
+
+/* ==========================================================
+   12. 启动
+   ========================================================== */
+loadGame();
+BONUS.nextAt = randInt(7, 15);
+renderStats();
+renderChest();
+
+})();
+</script>
+</body>
+</html>

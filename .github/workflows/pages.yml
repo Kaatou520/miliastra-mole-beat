@@ -25,16 +25,18 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # action 大版本要跟着 GitHub 走：v3/v4 那代读不到新 artifact，会报
+      # "No artifacts named github-pages were found"
+      - uses: actions/checkout@v7
 
-      - uses: actions/configure-pages@v5
-        with:
-          # 首次部署时如果 Pages 还没开启，让这个 action 直接用 token 打开（源 = GitHub Actions）
-          enablement: true
+      # Pages 已经开好（源 = GitHub Actions）；如果换成新仓库要先在 Settings → Pages 里点一次
+      - uses: actions/configure-pages@v6
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: web
+          # web/.nojekyll 是隐藏文件，默认不会进 artifact
+          include-hidden-files: true
 
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

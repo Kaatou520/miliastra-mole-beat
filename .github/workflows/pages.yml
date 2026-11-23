@@ -11,6 +11,8 @@ on:
 
 permissions:
   contents: read
+  # deploy-pages 要用 token 列本 run 的 artifact，缺了这个就报 "Found 0 artifact(s)"
+  actions: read
   pages: write
   id-token: write
 
